@@ -1,3 +1,6 @@
+interface Tool {
+    void sendMessage(String msg);
+}
 
 abstract class Sender {
     Tool tool;
@@ -10,27 +13,50 @@ abstract class Sender {
     abstract Tool genSender();
 }
 
-abstract class Tool {
-    abstract void sendMessage(String msg);
-}
-
-class Email extends Tool {
-    void sendMessage(String msg) {
+class Email implements Tool {
+    @Override
+    public void sendMessage(String msg) {
         System.out.println("發送 Email: " + msg);
     }
 }
 
-class SMS extends Tool {
-    void sendMessage(String msg) {
+class SMS implements Tool {
+    @Override
+    public void sendMessage(String msg) {
         System.out.println("發送 SMS: " + msg);
+    }
+}
+
+class EmailSender extends Sender {
+    @Override
+    Tool genSender() {
+        return new Email();
+    }
+}
+
+class SMSSender extends Sender {
+    @Override
+    Tool genSender() {
+        return new SMS();
+    }
+}
+
+class SenderFactory {
+    public Sender getSender(String type) {
+        if (type.equals("Email")) {
+            return new EmailSender();
+        } else if (type.equals("SMS")) {
+            return new SMSSender();
+        } else throw new IllegalArgumentException("No such sending mode");
     }
 }
 
 public class Main {
     public static void main(String[] args) {
-        Sender sender = new EmailSender();
+        SenderFactory senderFactory = new SenderFactory();
+        Sender sender = senderFactory.getSender("Email");
         sender.send("Hello");
-        sender = new SMSSender();
+        sender = senderFactory.getSender("SMS");
         sender.send("Hello");
 
     }
