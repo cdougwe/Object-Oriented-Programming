@@ -1,24 +1,17 @@
 import java.util.*;
 
-interface Observer {
+interface IObserver {
     void update(double price);
 }
 
-class Investor implements Observer {
+class Investor implements IObserver {
     private String name;
 
     public Investor(String name) {
         this.name = name;
     }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
     @Override
     public void update(double price) {
         System.out.println("Investor received update. New stock price: " + price);
@@ -26,24 +19,21 @@ class Investor implements Observer {
 }
 
 class StockMarket {
-    private ArrayList<Observer> observers = new ArrayList<>();
+    private ArrayList<IObserver> observers = new ArrayList<>();
     private double price;
 
-    void register(Observer observer) {
+    void register(IObserver observer) {
         observers.add(observer);
     }
-
-    void remove(Observer observer) {
+    void remove(IObserver observer) {
         observers.remove(observer);
     }
-
     public void setPrice(double price) {
         this.price = price;
         notifyInvestors();
     }
-
     public void notifyInvestors() {
-        for (Observer o : observers) {
+        for (IObserver o : observers) {
             o.update(price);
         }
     }
