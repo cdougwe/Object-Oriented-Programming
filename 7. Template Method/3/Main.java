@@ -6,9 +6,7 @@ abstract class DocumentProcessor {
     }
 
     abstract void readFile();
-
     abstract void processData();
-
     abstract void saveFile();
 }
 
