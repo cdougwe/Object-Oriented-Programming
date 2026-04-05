@@ -24,7 +24,7 @@ class PhysicsReport implements ReportStrategy {
 }
 
 public class ReportGenerator {
-    public ReportStrategy reportStrategy;
+    private ReportStrategy reportStrategy;
 
     public ReportGenerator() {
     }
