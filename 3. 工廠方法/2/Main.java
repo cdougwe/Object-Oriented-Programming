@@ -2,17 +2,6 @@ interface Tool {
     void sendMessage(String msg);
 }
 
-abstract class Sender {
-    Tool tool;
-
-    final void send(String msg) {
-        tool = genSender();
-        tool.sendMessage(msg);
-    }
-
-    abstract Tool genSender();
-}
-
 class Email implements Tool {
     @Override
     public void sendMessage(String msg) {
@@ -32,6 +21,17 @@ class EmailSender extends Sender {
     Tool genSender() {
         return new Email();
     }
+}
+
+abstract class Sender {
+    Tool tool;
+
+    final void send(String msg) {
+        tool = genSender();
+        tool.sendMessage(msg);
+    }
+
+    abstract Tool genSender();
 }
 
 class SMSSender extends Sender {
