@@ -7,7 +7,7 @@ interface ISubject {
 }
 
 interface IObserver {
-    void update();
+    void update(String level);
 }
 
 class Game implements ISubject {
@@ -30,31 +30,30 @@ class Game implements ISubject {
     }
     @Override
     public void notifyPlayers() {
+        System.out.println("Notifying players about Tutorial Completed achievement: " + achievement);
         for (IObserver io : iObservers) {
-            io.update();
+            io.update(achievement);
         }
     }
 }
 
 class Player implements IObserver {
-    private Game game;
     private String name;
 
-    public Player(Game game, String name) {
-        this.game = game;
+    public Player(String name) {
         this.name = name;
     }
 
     @Override
-    public void update() {
-        System.out.println("Player received update. New Tutorial Completed achievement: " + game.getAchievement());
+    public void update(String level) {
+        System.out.println("Player : " + name + " received update. New Tutorial Completed achievement: " + level);
     }
 }
 
 public class Main {
     public static void main(String[] args) {
         Game game = new Game();
-        IObserver obs = new Player(game, "Mary");
+        IObserver obs = new Player("Mary");
         game.registerObserver(obs);
         game.setAchievement("Level 2"); // Player received update from Game New Completed achievement: Level 2
         game.removeObserver(obs);
