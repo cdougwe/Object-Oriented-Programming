@@ -1,5 +1,5 @@
 interface DataProcessingSystem {
-    void processData(String filePath);
+    void processData(String file);
 }
 
 class LegacyFileReader {
@@ -14,6 +14,8 @@ class LegacyAdapter implements DataProcessingSystem {
     public LegacyAdapter() {
         this.legacyFileReader = new LegacyFileReader();
     }
+
+    @Override
     public void processData(String filePath) {
         legacyFileReader.readFromFile(filePath);
     }
