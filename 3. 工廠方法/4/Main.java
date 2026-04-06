@@ -20,7 +20,7 @@ class Truck implements Transportation {
     }
 }
 
-abstract class LogisticService {
+class LogisticService {
     protected Transportation transportation;
 
     public LogisticService(Transportation transportation) {
@@ -32,18 +32,6 @@ abstract class LogisticService {
     }
 }
 
-class ShipService extends LogisticService {
-    public ShipService() {
-        super(new Ship());
-    }
-}
-
-class TruckService extends LogisticService {
-    public TruckService() {
-        super(new Truck());
-    }
-}
-
 class LogisticFactory {
     public LogisticService getTransportType(String type) {
         if (type == null) {
@@ -52,8 +40,8 @@ class LogisticFactory {
         try {
             TransportType transportType = TransportType.valueOf(type.toUpperCase());
             return switch (transportType) {
-                case SHIP -> new ShipService();
-                case TRUCK -> new TruckService();
+                case SHIP -> new LogisticService(new Ship());
+                case TRUCK -> new LogisticService(new Truck());
             };
         } catch (Exception e) {
             throw new IllegalArgumentException(type + " is not supported!");
