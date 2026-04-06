@@ -1,0 +1,775 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./3_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./3_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./3_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./3_files/jquery.scrollbar.min.css">
+
+	<script src="./3_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./3_files/bootstrap.min.js.下載"></script>
+    <script src="./3_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_factory_method_3">
+		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反  Factory Method 模式，並撰寫報告，討論新設計有何優點?
+
+假設文件輸出時，需要兩個步驟:1.產生輸出模組物件，2.執行寫出動作。
+
+下面是程式碼的UML圖
+
+     
+
+
+修改 Main類別，並新增 DocumentExporter類別滿足下列需求：
+
+public class Main {
+    public static void main(String[] args) {
+        Document exporter = new PDF();
+        exporter.export(&quot;Hello&quot;, &quot;file1.pdf&quot;);
+        exporter = new CSV();
+        exporter.export(&quot;Hello&quot;, &quot;file2.csv&quot;);
+    }
+}
+abstract class Document {
+    private Exporter exporter ;
+	
+    final void export(String data, String filename) {
+	    exporter = genExporter();              //生成匯出工具
+        exporter.writeToFile(data, filename);  //執行匯出
+    }
+
+    abstract Exporter genExporter();
+    
+}
+public class PDF extends Document {
+    Exporter genExporter () { return .... ;}
+}
+
+public class CSV extends Document {
+    Exporter genExporter () { return .... ;}
+}
+
+
+abstract class Exporter {
+   .....
+}
+
+class PDFExporter extends Exporter {
+    @Override
+    void writeToFile(String data, String filename) {
+	   System.out.println(&quot;寫入 PDF檔案: &quot; + data + &quot; 到 &quot; + filename) ;
+	}
+}
+
+class CSVExporter extends Exporter {
+    @Override
+	void writeToFile(String data, String filename) {
+	   System.out.println(&quot;寫入 CSV: &quot; + data + &quot; 到 &quot;  + filename) ;
+	}
+}
+
+
+
+並修改其他程式，使得執行輸出：
+
+寫入 PDF檔案: Hello 到 file1.pdf 
+
+寫入 CSV檔案: Hello 到 file1.csv">
+		<input type="hidden" id="src_codes" name="src_codes" value="class CSVExporter extends Exporter {
+    void export() {
+        System.out.println(&quot;匯出 CSV&quot;);
+    }
+}
+abstract class Exporter {
+   abstract void writeToFile(String data, String filename);
+}
+public class Main {
+  public static void main(String[] args) {
+      Exporter exporter = new PDFExporter();
+      exporter.writeToFile(&quot;file1.pdf&quot;);
+      exporter = new CSVExporter();
+      exporter.writeToFile(&quot;file2.csv&quot;);
+  }
+} 
+class PDFExporter extends Exporter {
+    void export() {
+        System.out.println(&quot;匯出 PDF&quot;);
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="enum FileType {
+    PDF, CSV;
+}
+
+interface Exporter {
+    void writeToFile(String data, String filename);
+}
+
+class PDFExporter implements Exporter {
+    @Override
+    public void writeToFile(String data, String filename) {
+        System.out.println(&quot;寫入 PDF檔案: &quot; + data + &quot; 到 &quot; + filename);
+    }
+}
+
+class CSVExporter implements Exporter {
+    @Override
+    public void writeToFile(String data, String filename) {
+        System.out.println(&quot;寫入 CSV: &quot; + data + &quot; 到 &quot; + filename);
+    }
+}
+
+abstract class Document {
+    private Exporter exporter;
+
+    final void export(String data, String filename) {
+        exporter = genExporter(); // 生成匯出工具
+        exporter.writeToFile(data, filename); // 執行匯出
+    }
+
+    abstract Exporter genExporter();
+}
+
+class PDF extends Document {
+    @Override
+    Exporter genExporter() {
+        return new PDFExporter();
+    }
+}
+
+class CSV extends Document {
+    @Override
+    Exporter genExporter() {
+        return new CSVExporter();
+    }
+}
+
+class DocumentFactory {
+    public Document getType(String fileType) {
+        if (fileType == null)
+            throw new IllegalArgumentException(&quot;FillType should not be a null value&quot;);
+        try {
+            FileType type = FileType.valueOf(fileType.toUpperCase());
+            return switch (type) {
+                case PDF -&gt; new PDF();
+                case CSV -&gt; new CSV();
+            };
+        } catch (Exception e) {
+            throw new IllegalArgumentException(&quot;Unsupported file type:&quot; + fileType);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        DocumentFactory documentFactory = new DocumentFactory();
+        Document exporter = documentFactory.getType(&quot;Pdf&quot;);
+        exporter.export(&quot;Hello&quot;, &quot;file1.pdf&quot;);
+        exporter = documentFactory.getType(&quot;CSV&quot;);
+        exporter.export(&quot;Hello&quot;, &quot;file2.csv&quot;);
+    }
+}
+
+!@#$報告
+新設計有何優點?
+
+這個新設計最大的優點在於彈性大、維護容易。以前如果每種檔案格式都寫死在程式裡，程式碼會變得很雜，而且流程幾乎一樣，但如果想改或新增格式，就得修改很多地方，非常容易出錯。現在用抽象類別統一流程，PDF、CSV 或將來新增的格式，只要自己實作匯出的細節就行，主程式根本不用改，這樣程式結構就清楚很多，也方便測試。
+
+另外，這種設計模組化明顯。各種格式互不干擾，改 PDF 邏輯不會影響 CSV，新增其他格式也不用碰到舊程式碼。再加上工廠模式，主程式只要告訴工廠想要哪種檔案，它就幫你產生對應物件，主程式不需要知道底層細節。這樣不僅降低出錯率，也省下很多維護成本。
+
+最後，這個設計還很具擴充性。如果以後有新的檔案格式，例如 Excel、TXT，只要新增對應的類別和工廠設定就好，主程式完全不用動，對應的流程也自然套用抽象類別的規範。整體來說，比傳統把所有流程寫死的方式穩定、乾淨，也方便長期維護，程式的可讀性和可擴充性都大幅提升。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;一、錯誤分析：
+
+1. 實作正確性與OOP原則：
+學生完全正確地遵守了 Factory Method 模式需求：
+- Document 抽象類別，定義 export 流程；實作 PDF、CSV，將實際產生 Exporter 的部分留給子類別 genExporter()。
+- Exporter 由介面實現，明確拆分 PDFExporter、CSVExporter。
+- 工廠模式 (DocumentFactory) 適當產生子類實例，易於擴充。
+- 主程式使用工廠生產 Document，主流程固定。
+
+2. 主要錯誤個數：0 個，程式完全符合題意並正確設計。
+
+3. 小建議：程式已優雅完成，一些命名可略作改進（如 getType 更改為 createDocument），但不影響設計核心。
+
+二、報告分析：
+
+報告內容合理，無明顯AI自動生成痕跡，且內容詳實、聚焦於彈性、單一職責分離、可擴充及可維護性，說明與事實吻合，優於僅機械式描述設計模式。
+
+三、分數說明：
+- 程式部分：70分（滿分，皆正確無違反OOP和模式原則）
+- 報告部分：30分（滿分，說明完整且貼合題意）
+- 總分：100分
+&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 小幅命名建議：DocumentFactory 的方法名稱可以更符合工廠命名語意（如 getType 改為 createDocument）。
+2. 若以後要支援更多輸出格式，只需新增新 Document、Exporter 實作以及工廠對應分支即可。
+3. 若有例外處理需求（如匯出失敗），可於 writeToFile 加上 try-catch 等保護。
+4. Enum FileType 目前價值有限，可以視實際場景合併簡化。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.33</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">答案導向 (answer-oriented)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>完整說明設計問題、目標與約束，能明確反映出程式架構的優化意義。</li><li>有清楚區分舊設計與新設計的改善重點，展現任務導向的系統性思考。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>缺乏對設計選擇的理論推理、舉例驗證或疑難討論。</li><li>未見學生進行反思、追問 AI、驗證程式邏輯或主動比較多種解決方案。</li><li>互動僅止於單方向描述與優點列舉，沒有展現策略調整或認知監控。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試主動質疑或驗證程式設計的有效性，例如提供測試案例或要求 AI 幫忙驗證不同輸入下的表現。</li><li>對比多種設計模式，討論各自的適用情境與限制，促進更深層的思辨。</li><li>提出設計選擇上的困難點或傾向，要求 AI 提供依據、反饋與改進建議，提升互動的共同建構層次。</li><li>進行自我反思，例如回顧自己對工廠策略模式的理解是否正確，或調整原有設計思路再請 AI 評析。</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動展現了標準的任務導向特徵，對於程式設計目標、架構優勢與表面改良有明確說明，但缺乏更深層次的追問、比較、驗證與認知反思；互動風格停留在單方面結果呈現與描述，未能進階為共同建構或高主體性的人機協作。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>enum FileType {
+    PDF, CSV;
+}
+
+interface Exporter {
+    void writeToFile(String data, String filename);
+}
+
+class PDFExporter implements Exporter {
+    @Override
+    public void writeToFile(String data, String filename) {
+        System.out.println("寫入 PDF檔案: " + data + " 到 " + filename);
+    }
+}
+
+class CSVExporter implements Exporter {
+    @Override
+    public void writeToFile(String data, String filename) {
+        System.out.println("寫入 CSV: " + data + " 到 " + filename);
+    }
+}
+
+class Document {
+    private Exporter exporter;
+
+    public Document(Exporter exporter) {
+        this.exporter = exporter;
+    }
+    public final void export(String data, String filename) {
+        exporter.writeToFile(data, filename); // 執行匯出
+    }
+
+}
+
+class DocumentFactory {
+    public Document getType(String fileType) {
+        if (fileType == null)
+            throw new IllegalArgumentException("FillType should not be a null value");
+        try {
+            FileType type = FileType.valueOf(fileType.toUpperCase());
+            return switch (type) {
+                case PDF -&gt; new Document(new PDFExporter());
+                case CSV -&gt; new Document(new CSVExporter());
+            };
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unsupported file type:" + fileType);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        DocumentFactory documentFactory = new DocumentFactory();
+        Document exporter = documentFactory.getType("Pdf");
+        exporter.export("Hello", "file1.pdf");
+        exporter = documentFactory.getType("CSV");
+        exporter.export("Hello", "file2.csv");
+    }
+}
+
+!@#$報告
+新設計有何優點?
+
+這個程式示範了如何使用工廠模式搭配策略模式，實作文件匯出的功能，讓程式能夠依照不同檔案類型靈活輸出。
+
+我先定義一個 `Exporter` 介面，裡面有 `writeToFile(String data, String filename)` 方法，代表將資料寫入檔案。接著建立兩個實作類別 `PDFExporter` 與 `CSVExporter`，分別負責 PDF 與 CSV 格式的輸出，輸出時會顯示對應訊息，例如「寫入 PDF檔案: Hello 到 file1.pdf」。
+
+`Document` 類別持有一個 `Exporter`，並提供 `export` 方法，呼叫內部的 `Exporter` 完成資料寫入。這樣可以把匯出流程固定下來，而不同的檔案格式則由 `Exporter` 實作細節決定，符合策略模式的概念。
+
+`DocumentFactory` 是工廠類別，透過傳入的字串判斷檔案類型，回傳對應的 `Document`。如果傳入 `"PDF"` 就建立 PDF 文件匯出服務，傳入 `"CSV"` 則建立 CSV 文件匯出服務。這樣做的好處是，程式主體不用關心細節，只要告訴工廠要哪種檔案，就能自動取得對應服務，未來若增加新格式，只需新增 `Exporter` 實作即可。
+
+在 `main` 方法中，我先用工廠建立 PDF 文件匯出，呼叫 `export("Hello", "file1.pdf")`，顯示「寫入 PDF檔案: Hello 到 file1.pdf」。接著建立 CSV 文件匯出，呼叫 `export("Hello", "file2.csv")`，顯示「寫入 CSV: Hello 到 file2.csv」。整體設計把匯出流程與格式細節分離，提高了程式的可擴充性與維護性。
+!@#$
+</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>enum FileType {
+    PDF, CSV;
+}
+
+interface Exporter {
+    void writeToFile(String data, String filename);
+}
+
+class PDFExporter implements Exporter {
+    @Override
+    public void writeToFile(String data, String filename) {
+        System.out.println("寫入 PDF檔案: " + data + " 到 " + filename);
+    }
+}
+
+class CSVExporter implements Exporter {
+    @Override
+    public void writeToFile(String data, String filename) {
+        System.out.println("寫入 CSV: " + data + " 到 " + filename);
+    }
+}
+
+abstract class Document {
+    private Exporter exporter;
+
+    final void export(String data, String filename) {
+        exporter = genExporter(); // 生成匯出工具
+        exporter.writeToFile(data, filename); // 執行匯出
+    }
+
+    abstract Exporter genExporter();
+}
+
+class PDF extends Document {
+    @Override
+    Exporter genExporter() {
+        return new PDFExporter();
+    }
+}
+
+class CSV extends Document {
+    @Override
+    Exporter genExporter() {
+        return new CSVExporter();
+    }
+}
+
+class DocumentFactory {
+    public Document getType(String fileType) {
+        if (fileType == null)
+            throw new IllegalArgumentException("FillType should not be a null value");
+        try {
+            FileType type = FileType.valueOf(fileType.toUpperCase());
+            return switch (type) {
+                case PDF -&gt; new PDF();
+                case CSV -&gt; new CSV();
+            };
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unsupported file type:" + fileType);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        DocumentFactory documentFactory = new DocumentFactory();
+        Document exporter = documentFactory.getType("Pdf");
+        exporter.export("Hello", "file1.pdf");
+        exporter = documentFactory.getType("CSV");
+        exporter.export("Hello", "file2.csv");
+    }
+}
+
+!@#$報告
+新設計有何優點?
+
+這個新設計最大的優點在於彈性大、維護容易。以前如果每種檔案格式都寫死在程式裡，程式碼會變得很雜，而且流程幾乎一樣，但如果想改或新增格式，就得修改很多地方，非常容易出錯。現在用抽象類別統一流程，PDF、CSV 或將來新增的格式，只要自己實作匯出的細節就行，主程式根本不用改，這樣程式結構就清楚很多，也方便測試。
+
+另外，這種設計模組化明顯。各種格式互不干擾，改 PDF 邏輯不會影響 CSV，新增其他格式也不用碰到舊程式碼。再加上工廠模式，主程式只要告訴工廠想要哪種檔案，它就幫你產生對應物件，主程式不需要知道底層細節。這樣不僅降低出錯率，也省下很多維護成本。
+
+最後，這個設計還很具擴充性。如果以後有新的檔案格式，例如 Excel、TXT，只要新增對應的類別和工廠設定就好，主程式完全不用動，對應的流程也自然套用抽象類別的規範。整體來說，比傳統把所有流程寫死的方式穩定、乾淨，也方便長期維護，程式的可讀性和可擴充性都大幅提升。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>請檢視程式碼介面是否違反  Factory Method 模式，並撰寫報告，討論新設計有何優點?<br>
+假設文件輸出時，需要兩個步驟:1.產生輸出模組物件，2.執行寫出動作。
+</p><div>
+下面是程式碼的UML圖<br>
+  <a href="./3_files/UML1.png" target="_blank">  <img src="./3_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+
+修改 Main類別，並新增 DocumentExporter類別滿足下列需求：<br>
+<pre style="width:500px; height:300px;">public class Main {
+    public static void main(String[] args) {
+        Document exporter = new PDF();
+        exporter.export("Hello", "file1.pdf");
+        exporter = new CSV();
+        exporter.export("Hello", "file2.csv");
+    }
+}
+abstract class Document {
+    private Exporter exporter ;
+	
+    final void export(String data, String filename) {
+	    exporter = genExporter();              //生成匯出工具
+        exporter.writeToFile(data, filename);  //執行匯出
+    }
+
+    abstract Exporter genExporter();
+    
+}
+public class PDF extends Document {
+    Exporter genExporter () { return .... ;}
+}
+
+public class CSV extends Document {
+    Exporter genExporter () { return .... ;}
+}
+
+
+abstract class Exporter {
+   .....
+}
+
+class PDFExporter extends Exporter {
+    @Override
+    void writeToFile(String data, String filename) {
+	   System.out.println("寫入 PDF檔案: " + data + " 到 " + filename) ;
+	}
+}
+
+class CSVExporter extends Exporter {
+    @Override
+	void writeToFile(String data, String filename) {
+	   System.out.println("寫入 CSV: " + data + " 到 "  + filename) ;
+	}
+}
+
+</pre>
+
+並修改其他程式，使得執行輸出：<br>
+寫入 PDF檔案: Hello 到 file1.pdf <br>
+寫入 CSV檔案: Hello 到 file1.csv <br>
+<br>
+ <br>
+
+<br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">class CSVExporter extends Exporter {
+    void export() {
+        System.out.println("匯出 CSV");
+    }
+}
+abstract class Exporter {
+   abstract void writeToFile(String data, String filename);
+}
+public class Main {
+  public static void main(String[] args) {
+      Exporter exporter = new PDFExporter();
+      exporter.writeToFile("file1.pdf");
+      exporter = new CSVExporter();
+      exporter.writeToFile("file2.csv");
+  }
+} 
+class PDFExporter extends Exporter {
+    void export() {
+        System.out.println("匯出 PDF");
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">enum FileType {
+    PDF, CSV;
+}
+
+interface Exporter {
+    void writeToFile(String data, String filename);
+}
+
+class PDFExporter implements Exporter {
+    @Override
+    public void writeToFile(String data, String filename) {
+        System.out.println("寫入 PDF檔案: " + data + " 到 " + filename);
+    }
+}
+
+class CSVExporter implements Exporter {
+    @Override
+    public void writeToFile(String data, String filename) {
+        System.out.println("寫入 CSV: " + data + " 到 " + filename);
+    }
+}
+
+abstract class Document {
+    private Exporter exporter;
+
+    final void export(String data, String filename) {
+        exporter = genExporter(); // 生成匯出工具
+        exporter.writeToFile(data, filename); // 執行匯出
+    }
+
+    abstract Exporter genExporter();
+}
+
+class PDF extends Document {
+    @Override
+    Exporter genExporter() {
+        return new PDFExporter();
+    }
+}
+
+class CSV extends Document {
+    @Override
+    Exporter genExporter() {
+        return new CSVExporter();
+    }
+}
+
+class DocumentFactory {
+    public Document getType(String fileType) {
+        if (fileType == null)
+            throw new IllegalArgumentException("FillType should not be a null value");
+        try {
+            FileType type = FileType.valueOf(fileType.toUpperCase());
+            return switch (type) {
+                case PDF -&gt; new PDF();
+                case CSV -&gt; new CSV();
+            };
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unsupported file type:" + fileType);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        DocumentFactory documentFactory = new DocumentFactory();
+        Document exporter = documentFactory.getType("Pdf");
+        exporter.export("Hello", "file1.pdf");
+        exporter = documentFactory.getType("CSV");
+        exporter.export("Hello", "file2.csv");
+    }
+}
+
+!@#$報告
+新設計有何優點?
+
+這個新設計最大的優點在於彈性大、維護容易。以前如果每種檔案格式都寫死在程式裡，程式碼會變得很雜，而且流程幾乎一樣，但如果想改或新增格式，就得修改很多地方，非常容易出錯。現在用抽象類別統一流程，PDF、CSV 或將來新增的格式，只要自己實作匯出的細節就行，主程式根本不用改，這樣程式結構就清楚很多，也方便測試。
+
+另外，這種設計模組化明顯。各種格式互不干擾，改 PDF 邏輯不會影響 CSV，新增其他格式也不用碰到舊程式碼。再加上工廠模式，主程式只要告訴工廠想要哪種檔案，它就幫你產生對應物件，主程式不需要知道底層細節。這樣不僅降低出錯率，也省下很多維護成本。
+
+最後，這個設計還很具擴充性。如果以後有新的檔案格式，例如 Excel、TXT，只要新增對應的類別和工廠設定就好，主程式完全不用動，對應的流程也自然套用抽象類別的規範。整體來說，比傳統把所有流程寫死的方式穩定、乾淨，也方便長期維護，程式的可讀性和可擴充性都大幅提升。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
