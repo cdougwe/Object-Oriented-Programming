@@ -1,0 +1,564 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./2_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./2_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./2_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./2_files/jquery.scrollbar.min.css">
+
+	<script src="./2_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./2_files/bootstrap.min.js.下載"></script>
+    <script src="./2_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_observer_2">
+		<input type="hidden" id="problem" name="problem" value="假設有多個氣象顯示單位(WeatherDisplay)關注氣象站(WeatherStation)的氣象資料。 
+
+請檢視程式碼介面是否違反 Observer  模式，並撰寫報告，討論新設計有何優點?
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改使得：
+ 
+   public class Main {
+    public static void main(String[] args) {
+      ISubject subject = new WeatherStation( );
+      IObserver obs  = new WeatherDisplay (&quot;Taipei&quot;) ; 
+      subject.registerObserver( obs ) ; 
+      ((WeatherStation) subject).setWeather(&quot;Cold&quot;); //顯示 &quot;Taipei received WeatherStation update. New weather: Cold &quot;
+      subject.removeObserver( obs ) ; 
+  }
+}">
+		<input type="hidden" id="src_codes" name="src_codes" value="public class Main {
+    public static void main(String[] args) {
+      WeatherDisplay  wd = new WeatherDisplay(new WeatherStation()  ) ; 
+       System.out.println( wd.update() ) ;
+  }
+
+}
+public class WeatherDisplay {
+    private WeatherStation weatherStation;
+    public WeatherDisplay(WeatherStation weatherStation) {
+        this.weatherStation = weatherStation;
+    }
+    public void update() {
+        System.out.println(&quot;Display received update. New weather: &quot; + weatherStation.getWeather());
+    }
+}
+public class WeatherStation {
+    private String weather;
+    public void setWeather(String weather) {
+        this.weather = weather;
+        notifyDisplays();
+    }
+    public void notifyDisplays() {
+        System.out.println(&quot;Notifying displays about weather change to: &quot; + weather);
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="import java.util.ArrayList;
+
+interface ISubject {
+    void registerObserver(IObserver obs);
+    void removeObserver(IObserver obs);
+    void notifyDisplays();
+}
+
+interface IObserver {
+    void update(String weather);
+}
+
+class WeatherStation implements ISubject {
+    private ArrayList&lt;IObserver&gt; observers = new ArrayList&lt;&gt;();
+    private String weather;
+
+    public void setWeather(String weather) {
+        this.weather = weather;
+        notifyDisplays();
+    }
+
+    @Override
+    public void registerObserver(IObserver obs) {
+        observers.add(obs);
+    }
+    @Override
+    public void removeObserver(IObserver obs) {
+        observers.remove(obs);
+    }
+    @Override
+    public void notifyDisplays() {
+        System.out.println(&quot;Notifying displays about weather change to: &quot; + weather);
+        for (IObserver iObserver : observers) {
+            iObserver.update(weather);
+        }
+    }
+}
+
+class WeatherDisplay implements IObserver {
+    private String city;
+
+    public WeatherDisplay(String city) {
+        this.city = city;
+    }
+    @Override
+    public void update(String weather) {
+        System.out.println(city + &quot; received WeatherStation update. New weather: &quot; + weather);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        WeatherStation subject = new WeatherStation();
+        IObserver obs = new WeatherDisplay(&quot;Taipei&quot;);
+        subject.registerObserver(obs);
+        subject.setWeather(&quot;Cold&quot;); // 顯示 &quot;Taipei received WeatherStation update. New weather: Cold &quot;
+        subject.removeObserver(obs);
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這段程式是用「觀察者模式」設計的天氣通知系統。程式裡有兩個主要角色：WeatherStation（天氣站）和 WeatherDisplay（顯示器）。天氣站負責記錄天氣狀態，也會管理所有註冊的顯示器，當天氣有更新時就會通知所有顯示器。每個顯示器則是觀察者，它們會接收到天氣站的訊息並顯示出來。
+
+程式的流程如下：首先，我們建立一個 WeatherStation 的物件作為主題，然後建立一個 WeatherDisplay 的物件來代表台北的顯示器。接著把這個顯示器註冊到天氣站，表示它想要接收天氣更新。當我們呼叫 setWeather(&quot;Cold&quot;) 的時候，天氣站就會把新的天氣狀態通知給所有註冊的顯示器，顯示器收到後會印出「Taipei received WeatherStation update. New weather: Cold」。如果之後不想再接收更新，只要呼叫 removeObserver 把顯示器移除即可。
+
+整體來看，這個設計的好處是擴充性很高。如果以後要新增更多城市的顯示器，只要建立新的 WeatherDisplay 物件並註冊即可，不需要修改天氣站的程式。這樣不但程式維護簡單，也符合物件導向的開放封閉原則（對擴充開放，對修改封閉）。此外，觀察者模式讓天氣站和顯示器之間的耦合度降低，天氣站只負責管理通知，而顯示器只專注於顯示資料，責任分工清楚。
+
+簡單來說，這個程式模擬了現實生活中天氣資訊傳遞的情況：天氣站就像氣象局，負責收集資料並發布，而各個城市的顯示器就像民眾或應用程式，收到訊息後做出反應。使用觀察者模式不僅讓程式結構清楚，也方便未來增加新的功能或新的顯示器。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 錯誤/瑕疵數：本題要求檢查程式設計是否違反 Observer 模式，並進行重新設計。學生的程式完全符合 Observer(觀察者)模式，不再直接讓 WeatherDisplay（顯示器）「拿」WeatherStation當欄位、單向依賴、緊耦合，而是採用介面（ISubject/IObserver），由 WeatherStation 負責管理觀察者。本程式可成功註冊/移除觀察者、發送天氣通知，並合理印出指定文字。物件導向原則（開放封閉/低耦合/單一職責）皆有兼顧。無設計或語法錯誤，功能完全正確。 
+2. 報告方面：學生報告內容敘述了新設計的流程、好處、以及物件導向觀點，內容清楚且未發現明顯 AI 生成痕跡，與本次程式設計相符且無抄襲現象。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;雖然本程式正確，仍可建議：
+1. WeatherStation 的 notifyDisplays 其實可命名為 notifyObservers ，語義更符合一般 Observer pattern 通用說法。
+2. 若觀察者很多時，可考慮防呆重複註冊同個 Observer。
+3. 若日後 Observer 也需主動查詢 WeatherStation 狀態，可改成 update 不直接傳值，而是傳遞主體再由觀察者取得狀態。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">答案導向 (answer-oriented)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>任務定義、程式流程描述明確</li><li>能夠有系統性、有結構地解釋設計優點</li></ul>
+
+					<p>缺點</p>
+					<ul><li>缺乏對AI答案的質疑、驗證、或分析討論</li><li>未進行比較、理由追問，缺少反思與策略調整</li><li>沒有主動要求進一步推理或討論設計限制</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試主動比較不同設計模式、增添『為什麼這樣做會更好』的討論</li><li>可以針對AI的回應進行驗證、質疑，或反思哪裡還可以改進</li><li>主動規劃下一個學習／討論步驟，提出延伸或挑戰性的問題以促進更深入的人機互動</li></ul>
+
+					<p>總評</p>
+					<pre>學生本次互動僅展現基礎的任務導向表現，總體是將自己理解系統流程、優點寫成報告，缺乏與AI真的互動討論、驗證、追問或比較。人機互動層次偏向『答案導向』，較難展現高層次主體思考或共同建構歷程。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>import java.util.ArrayList;
+
+interface ISubject {
+    void registerObserver(IObserver obs);
+    void removeObserver(IObserver obs);
+    void notifyDisplays();
+}
+
+interface IObserver {
+    void update(String weather);
+}
+
+class WeatherStation implements ISubject {
+    private ArrayList<iobserver> observers = new ArrayList&lt;&gt;();
+    private String weather;
+
+    public void setWeather(String weather) {
+        this.weather = weather;
+        notifyDisplays();
+    }
+
+    @Override
+    public void registerObserver(IObserver obs) {
+        observers.add(obs);
+    }
+    @Override
+    public void removeObserver(IObserver obs) {
+        observers.remove(obs);
+    }
+    @Override
+    public void notifyDisplays() {
+        System.out.println("Notifying displays about weather change to: " + weather);
+        for (IObserver iObserver : observers) {
+            iObserver.update(weather);
+        }
+    }
+}
+
+class WeatherDisplay implements IObserver {
+    private String city;
+
+    public WeatherDisplay(String city) {
+        this.city = city;
+    }
+    @Override
+    public void update(String weather) {
+        System.out.println(city + " received WeatherStation update. New weather: " + weather);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        WeatherStation subject = new WeatherStation();
+        IObserver obs = new WeatherDisplay("Taipei");
+        subject.registerObserver(obs);
+        subject.setWeather("Cold"); // 顯示 "Taipei received WeatherStation update. New weather: Cold "
+        subject.removeObserver(obs);
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這段程式是用「觀察者模式」設計的天氣通知系統。程式裡有兩個主要角色：WeatherStation（天氣站）和 WeatherDisplay（顯示器）。天氣站負責記錄天氣狀態，也會管理所有註冊的顯示器，當天氣有更新時就會通知所有顯示器。每個顯示器則是觀察者，它們會接收到天氣站的訊息並顯示出來。
+
+程式的流程如下：首先，我們建立一個 WeatherStation 的物件作為主題，然後建立一個 WeatherDisplay 的物件來代表台北的顯示器。接著把這個顯示器註冊到天氣站，表示它想要接收天氣更新。當我們呼叫 setWeather("Cold") 的時候，天氣站就會把新的天氣狀態通知給所有註冊的顯示器，顯示器收到後會印出「Taipei received WeatherStation update. New weather: Cold」。如果之後不想再接收更新，只要呼叫 removeObserver 把顯示器移除即可。
+
+整體來看，這個設計的好處是擴充性很高。如果以後要新增更多城市的顯示器，只要建立新的 WeatherDisplay 物件並註冊即可，不需要修改天氣站的程式。這樣不但程式維護簡單，也符合物件導向的開放封閉原則（對擴充開放，對修改封閉）。此外，觀察者模式讓天氣站和顯示器之間的耦合度降低，天氣站只負責管理通知，而顯示器只專注於顯示資料，責任分工清楚。
+
+簡單來說，這個程式模擬了現實生活中天氣資訊傳遞的情況：天氣站就像氣象局，負責收集資料並發布，而各個城市的顯示器就像民眾或應用程式，收到訊息後做出反應。使用觀察者模式不僅讓程式結構清楚，也方便未來增加新的功能或新的顯示器。!@#$
+</iobserver></pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p> 假設有多個氣象顯示單位(WeatherDisplay)關注氣象站(WeatherStation)的氣象資料。 <br>
+請檢視程式碼介面是否違反 Observer  模式，並撰寫報告，討論新設計有何優點?
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./2_files/UML1.png" target="_blank">
+ <img src="./2_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改使得：
+<pre style="width:500px; height:300px;"> 
+   public class Main {
+    public static void main(String[] args) {
+      ISubject subject = new WeatherStation( );
+      IObserver obs  = new WeatherDisplay ("Taipei") ; 
+      subject.registerObserver( obs ) ; 
+      ((WeatherStation) subject).setWeather("Cold"); //顯示 "Taipei received WeatherStation update. New weather: Cold "
+      subject.removeObserver( obs ) ; 
+  }
+}
+</pre>
+ <br>
+ <br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class Main {
+    public static void main(String[] args) {
+      WeatherDisplay  wd = new WeatherDisplay(new WeatherStation()  ) ; 
+       System.out.println( wd.update() ) ;
+  }
+
+}
+public class WeatherDisplay {
+    private WeatherStation weatherStation;
+    public WeatherDisplay(WeatherStation weatherStation) {
+        this.weatherStation = weatherStation;
+    }
+    public void update() {
+        System.out.println("Display received update. New weather: " + weatherStation.getWeather());
+    }
+}
+public class WeatherStation {
+    private String weather;
+    public void setWeather(String weather) {
+        this.weather = weather;
+        notifyDisplays();
+    }
+    public void notifyDisplays() {
+        System.out.println("Notifying displays about weather change to: " + weather);
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">import java.util.ArrayList;
+
+interface ISubject {
+    void registerObserver(IObserver obs);
+    void removeObserver(IObserver obs);
+    void notifyDisplays();
+}
+
+interface IObserver {
+    void update(String weather);
+}
+
+class WeatherStation implements ISubject {
+    private ArrayList&lt;IObserver&gt; observers = new ArrayList&lt;&gt;();
+    private String weather;
+
+    public void setWeather(String weather) {
+        this.weather = weather;
+        notifyDisplays();
+    }
+
+    @Override
+    public void registerObserver(IObserver obs) {
+        observers.add(obs);
+    }
+    @Override
+    public void removeObserver(IObserver obs) {
+        observers.remove(obs);
+    }
+    @Override
+    public void notifyDisplays() {
+        System.out.println("Notifying displays about weather change to: " + weather);
+        for (IObserver iObserver : observers) {
+            iObserver.update(weather);
+        }
+    }
+}
+
+class WeatherDisplay implements IObserver {
+    private String city;
+
+    public WeatherDisplay(String city) {
+        this.city = city;
+    }
+    @Override
+    public void update(String weather) {
+        System.out.println(city + " received WeatherStation update. New weather: " + weather);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        WeatherStation subject = new WeatherStation();
+        IObserver obs = new WeatherDisplay("Taipei");
+        subject.registerObserver(obs);
+        subject.setWeather("Cold"); // 顯示 "Taipei received WeatherStation update. New weather: Cold "
+        subject.removeObserver(obs);
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這段程式是用「觀察者模式」設計的天氣通知系統。程式裡有兩個主要角色：WeatherStation（天氣站）和 WeatherDisplay（顯示器）。天氣站負責記錄天氣狀態，也會管理所有註冊的顯示器，當天氣有更新時就會通知所有顯示器。每個顯示器則是觀察者，它們會接收到天氣站的訊息並顯示出來。
+
+程式的流程如下：首先，我們建立一個 WeatherStation 的物件作為主題，然後建立一個 WeatherDisplay 的物件來代表台北的顯示器。接著把這個顯示器註冊到天氣站，表示它想要接收天氣更新。當我們呼叫 setWeather("Cold") 的時候，天氣站就會把新的天氣狀態通知給所有註冊的顯示器，顯示器收到後會印出「Taipei received WeatherStation update. New weather: Cold」。如果之後不想再接收更新，只要呼叫 removeObserver 把顯示器移除即可。
+
+整體來看，這個設計的好處是擴充性很高。如果以後要新增更多城市的顯示器，只要建立新的 WeatherDisplay 物件並註冊即可，不需要修改天氣站的程式。這樣不但程式維護簡單，也符合物件導向的開放封閉原則（對擴充開放，對修改封閉）。此外，觀察者模式讓天氣站和顯示器之間的耦合度降低，天氣站只負責管理通知，而顯示器只專注於顯示資料，責任分工清楚。
+
+簡單來說，這個程式模擬了現實生活中天氣資訊傳遞的情況：天氣站就像氣象局，負責收集資料並發布，而各個城市的顯示器就像民眾或應用程式，收到訊息後做出反應。使用觀察者模式不僅讓程式結構清楚，也方便未來增加新的功能或新的顯示器。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

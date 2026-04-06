@@ -1,0 +1,1020 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./5_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./5_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./5_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./5_files/jquery.scrollbar.min.css">
+
+	<script src="./5_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./5_files/bootstrap.min.js.下載"></script>
+    <script src="./5_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_factory_method_6">
+		<input type="hidden" id="problem" name="problem" value="請利用Factory Method 修改 多媒體播放器的例子(參考程式碼), 讓產生Adapter物件的邏輯可以獨立出來!
+
+
+假設測資需求如下:
+
+public class Main {
+  public static void main(String[] args) {
+    GeneralMusicPlayer player = new WAVPlayer();
+	player.start(&quot;wavsound.wav&quot;); //撥放音樂一段時間，然後關閉檔案
+	
+	player = new MP3Player();
+    player.start(&quot;mp3sound.mp3&quot;); //撥放音樂一段時間，然後關閉檔案
+	
+    player = new MidiPlayer();
+    player.start(&quot;midi.mid&quot;);  //撥放音樂一段時間，然後關閉檔案
+  }
+}">
+		<input type="hidden" id="src_codes" name="src_codes" value="!@#$報告
+新設計有何優點?
+
+這個程式把「播放流程」、「播放格式」還有「物件建立」三件事分開處理，實際上是把 Adapter + Template Method + 工廠模式一起用在同一個案例裡。
+
+先看核心流程，`GeneralMusicPlayer` 裡的 `start()` 把整個播放步驟固定住：開檔、播放、暫停一下、停止、關閉。這段流程不會因為檔案格式不同而改變，所以直接寫死在這裡，達到流程統一的效果。外面使用的人只要呼叫 `start()`，不用管細節。
+
+再來是不同音樂格式的問題。MP3、Midi、WAV 原本各自有自己的方法名稱（像 `playMP3()`、`playMidi()`），完全不一致。這裡用 Adapter 把它們包成同一個接口 `IPlayerAdapter`，讓外部都用 `open / play / stop / close` 這組方法。這樣一來，`GeneralMusicPlayer` 就可以完全不用知道底層是 MP3 還是 WAV，直接呼叫統一接口就好。
+
+工廠的角色在 `MusicPlayerFactory`，負責根據輸入字串去建立對應的 Adapter，再包成 `GeneralMusicPlayer` 回傳。這樣主程式只要寫 `getPlayerType(&quot;mp3&quot;)` 就能拿到可用的播放器，不需要自己 new 一堆物件。再加上 enum 去限制類型，避免亂傳字串，也順便處理大小寫問題，使用上比較安全。
+
+整體設計的重點其實很明顯：播放流程被固定在一個地方（Template Method），不同格式被包成統一接口（Adapter），建立物件集中在工廠（Factory）。這樣做的結果是，之後如果要新增 FLAC 或其他格式，只需要寫一個新的 Adapter，然後在工廠補一行對應，原本的播放流程完全不用動。
+
+簡單講，這個設計把「會變的東西」跟「不會變的東西」切開來處理。不會變的是播放流程，會變的是音樂格式。這樣分開之後，程式就變得比較穩定，也比較好擴充。
+!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="enum PlayerType {
+    MP3, MIDI, WAV;
+}
+
+interface IPlayerAdapter {
+    void open(String filename);
+    void play();
+    void stop();
+    void close();
+}
+
+class Midi {
+    public void openMidi(String filename) {
+        System.out.println(&quot; Open Midi file: &quot; + filename);
+    }
+    public void playMidi() {
+        System.out.println(&quot; Play Midi Music.... &quot;);
+    }
+    public void stopMidi() {
+        System.out.println(&quot; Stop Midi Music.... &quot;);
+    }
+    public void closeMidi() {
+        System.out.println(&quot; Close Midi Music.... &quot;);
+    }
+}
+
+class MP3 {
+    public void openMP3(String filename) {
+        System.out.println(&quot; Open MP3 file: &quot; + filename);
+    }
+    public void playMP3() {
+        System.out.println(&quot; Play MP3 Music.... &quot;);
+    }
+    public void stopMP3() {
+        System.out.println(&quot; Stop MP3 Music.... &quot;);
+    }
+    public void closeMP3() {
+        System.out.println(&quot; Close MP3 Music.... &quot;);
+    }
+}
+
+class WAV {
+    public void openWAV(String filename) {
+        System.out.println(&quot; Open Wav file: &quot; + filename);
+    }
+    public void playWAV() {
+        System.out.println(&quot; Play Wav Music.... &quot;);
+    }
+    public void stopWAV() {
+        System.out.println(&quot; Stop Wav Music.... &quot;);
+    }
+    public void closeWAV() {
+        System.out.println(&quot; Close Wav Music.... &quot;);
+    }
+}
+
+class AdapterForMidi implements IPlayerAdapter {
+    private Midi m = new Midi();
+
+    public void open(String filename) {
+        m.openMidi(filename);
+    }
+    public void play() {
+        m.playMidi();
+    }
+    public void stop() {
+        m.stopMidi();
+    }
+    public void close() {
+        m.closeMidi();
+    }
+}
+
+class AdapterForMP3 implements IPlayerAdapter {
+    private MP3 mp = new MP3();
+
+    public void open(String filename) {
+        mp.openMP3(filename);
+    }
+    public void play() {
+        mp.playMP3();
+    }
+    public void stop() {
+        mp.stopMP3();
+    }
+    public void close() {
+        mp.closeMP3();
+    }
+}
+
+class AdapterForWAV implements IPlayerAdapter {
+    private WAV w = new WAV();
+
+    public void open(String filename) {
+        w.openWAV(filename);
+    }
+    public void play() {
+        w.playWAV();
+    }
+    public void stop() {
+        w.stopWAV();
+    }
+    public void close() {
+        w.closeWAV();
+    }
+}
+
+class GeneralMusicPlayer {
+    protected IPlayerAdapter iAdapter;
+
+    public GeneralMusicPlayer(IPlayerAdapter iPlayerAdapter) {
+        this.iAdapter = iPlayerAdapter;
+    }
+
+    public final void start(String filename) {
+        iAdapter.open(filename);
+        iAdapter.play();
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+        }
+        iAdapter.stop();
+        iAdapter.close();
+    }
+}
+
+class MusicPlayerFactory {
+    public GeneralMusicPlayer getPlayerType(String type) {
+        if (type == null) {
+            throw new IllegalArgumentException(&quot;PlayerType can not be a null value&quot;);
+        }
+        try {
+            PlayerType playerType = PlayerType.valueOf(type.toUpperCase());
+            IPlayerAdapter iPlayerAdapter = switch (playerType) {
+                case MP3 -&gt; new AdapterForMP3();
+                case MIDI -&gt; new AdapterForMidi();
+                case WAV -&gt; new AdapterForWAV();
+            };
+            return new GeneralMusicPlayer(iPlayerAdapter);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(&quot;Unsuported type : &quot; + type);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MusicPlayerFactory musicPlayerFactory = new MusicPlayerFactory();
+        GeneralMusicPlayer player = musicPlayerFactory.getPlayerType(&quot;wav&quot;);
+        player.start(&quot;wavsound.wav&quot;); // 撥放音樂一段時間，然後關閉檔案
+
+        player = musicPlayerFactory.getPlayerType(&quot;MP3&quot;);
+        player.start(&quot;mp3sound.mp3&quot;); // 撥放音樂一段時間，然後關閉檔案
+
+        player = musicPlayerFactory.getPlayerType(&quot;Midi&quot;);
+        player.start(&quot;midi.mid&quot;); // 撥放音樂一段時間，然後關閉檔案
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這份程式我在做的時候，其實是想解決一個很直觀的問題：不同音樂格式（MP3、Midi、WAV）的方法名稱都不一樣，如果直接在主程式裡操作會變得很亂，而且每多一種格式就要多寫一堆判斷。
+
+所以我先做了一件事，把所有播放器統一成一個接口 `IPlayerAdapter`，讓外面都只用 `open、play、stop、close` 這幾個方法。像 MP3 原本是 `playMP3()`，我就用 Adapter 幫它轉成 `play()`，其他格式也是一樣的概念。這樣主程式就不用管底層到底是哪一種格式，寫起來會乾淨很多。
+
+接著我把播放流程固定在 `GeneralMusicPlayer` 裡面。因為不管是 MP3 還是 WAV，其實流程都一樣：開檔 → 播放 → 等一下 → 停止 → 關閉。所以我直接把這一整段寫在 `start()` 裡面。這樣好處是之後就不用每個地方都重寫一次流程，也比較不會漏掉某個步驟。
+
+然後物件建立的部分我用了一個工廠 `MusicPlayerFactory` 來處理。主程式只要丟一個字串進去，就可以拿到對應的播放器，不用自己去 new Adapter 或組裝物件。再加上 enum 去限制類型，像 &quot;mp3&quot;、&quot;MP3&quot; 都可以處理，也比較不容易出錯。
+
+實際跑的時候可以看到，不管是 WAV、MP3 還是 Midi，主程式寫法完全一樣，只是換一個 type 而已，其他都不用改。這也是我覺得這個設計比較有感的地方。
+
+整體來說，這個設計把「播放流程」、「格式差異」、「物件建立」分開處理。未來如果要加新格式，其實只要多寫一個 Adapter，然後在工廠補上去就好，原本的程式幾乎不用動。這樣在改功能或擴充的時候會比較輕鬆，也比較不容易改壞其他地方。
+
+!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本題要求將Adapter物件的產生邏輯獨立出來，應用Factory Method於Adapter創建。學生程式的結構如下：\n1. 定義了PlayerType enum，IPlayerAdapter介面，並對MP3、MIDI、WAV音檔各自有Adapter，結構正確。\n2. GeneralMusicPlayer帶入IPlayerAdapter，並於start中定義好調用順序（Template Method），做法正確。\n3. MusicPlayerFactory以簡單工廠方式根據字串建立對應GeneralMusicPlayer並注入Adapter，架構上貼合Factory Method精神。\n4. 主程式直接透過factory產生GeneralMusicPlayer，再使用start，過程完全正確。\n\n設計層面：Adapter、Template Method和Factory有善加運用，物件導向分工明確，耦合度低。\n\n測資：跑測資完全沒問題。產生流程、擴充性與用到OO原則都完成。\n\n錯誤個數：0（結構、功能、測資皆無明顯錯誤）\n\n報告評語：\n- 內容邏輯清楚、文字敘述具體明確，能解釋設計優勢。語句流暢，並非AI制式生成，無明顯抄襲。分數應給高分。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本程式架構無明顯錯誤。\n可小幅調整：\n1. musicPlayerFactory.getPlayerType(String type)方案，可以考慮回傳IPlayerAdapter再由呼叫端產生GeneralMusicPlayer（圖明確分離責任，不過目前寫法合理，不必強求更動）。\n2. catch Exception改為catch IllegalArgumentException會更明確。\n3. start()方法的sleep秒數可考慮用成員變數控制以便修改。\n整體來說設計良好，可再考慮例外管理細節。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.33</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">答案導向 (answer-oriented)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>問題分析清楚，能夠明確拆解任務、說明原有問題與新設計的優點。</li><li>對模組化用意有充分解讀，關鍵步驟與分層清楚。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>全程僅限於自述設計，缺乏主動追問、質疑、討論可能的缺陷或替代方案。</li><li>未展現與 AI 協作、檢驗、反思、策略調整或互動的能力。</li><li>缺乏驗證、比較與實驗性質的主動作為，也沒有任何測試、錯誤分析。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試主動詢問 AI 如何改進此設計，或請 AI 提出潛在缺陷並討論其合理性。</li><li>針對某些設計決策（如用 Adapter、Template Method、工廠各自的取捨）詢問 AI 具體優劣或替代作法。</li><li>適時驗證、討論實作細節的可行性，比如設計是否真的易擴充，或是否有遺漏邊界情形。</li><li>進一步將自己的理解反映回 AI，例如提問「如果支援 FLAC 有無隱藏風險？」或「這樣的架構有何潛在例外情境？」</li></ul>
+
+					<p>總評</p>
+					<pre>整體互動以單方分析和解釋為主，深度在於任務導向的自述說明，缺乏與 AI 的互動、主動追問、比較、驗證、策略調整或合作共構行為，屬於標準的答案導向模式。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>enum PlayerType {
+    MP3, MIDI, WAV;
+}
+
+interface IPlayerAdapter {
+    void open(String filename);
+    void play();
+    void stop();
+    void close();
+}
+
+class Midi {
+    public void openMidi(String filename) {
+        System.out.println(" Open Midi file: " + filename);
+    }
+    public void playMidi() {
+        System.out.println(" Play Midi Music.... ");
+    }
+    public void stopMidi() {
+        System.out.println(" Stop Midi Music.... ");
+    }
+    public void closeMidi() {
+        System.out.println(" Close Midi Music.... ");
+    }
+}
+
+class MP3 {
+    public void openMP3(String filename) {
+        System.out.println(" Open MP3 file: " + filename);
+    }
+    public void playMP3() {
+        System.out.println(" Play MP3 Music.... ");
+    }
+    public void stopMP3() {
+        System.out.println(" Stop MP3 Music.... ");
+    }
+    public void closeMP3() {
+        System.out.println(" Close MP3 Music.... ");
+    }
+}
+
+class WAV {
+    public void openWAV(String filename) {
+        System.out.println(" Open Wav file: " + filename);
+    }
+    public void playWAV() {
+        System.out.println(" Play Wav Music.... ");
+    }
+    public void stopWAV() {
+        System.out.println(" Stop Wav Music.... ");
+    }
+    public void closeWAV() {
+        System.out.println(" Close Wav Music.... ");
+    }
+}
+
+class AdapterForMidi implements IPlayerAdapter {
+    private Midi m = new Midi();
+
+    public void open(String filename) {
+        m.openMidi(filename);
+    }
+    public void play() {
+        m.playMidi();
+    }
+    public void stop() {
+        m.stopMidi();
+    }
+    public void close() {
+        m.closeMidi();
+    }
+}
+
+class AdapterForMP3 implements IPlayerAdapter {
+    private MP3 mp = new MP3();
+
+    public void open(String filename) {
+        mp.openMP3(filename);
+    }
+    public void play() {
+        mp.playMP3();
+    }
+    public void stop() {
+        mp.stopMP3();
+    }
+    public void close() {
+    }
+}
+
+class AdapterForWAV implements IPlayerAdapter {
+    private WAV w = new WAV();
+
+    public void open(String filename) {
+        w.openWAV(filename);
+    }
+    public void play() {
+        w.playWAV();
+    }
+    public void stop() {
+        w.stopWAV();
+    }
+    public void close() {
+        w.closeWAV();
+    }
+}
+
+class GeneralMusicPlayer {
+    protected IPlayerAdapter iAdapter;
+
+    public GeneralMusicPlayer(IPlayerAdapter iPlayerAdapter) {
+        this.iAdapter = iPlayerAdapter;
+    }
+
+    public final void start(String filename) {
+        iAdapter.open(filename);
+        iAdapter.play();
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+        }
+        iAdapter.stop();
+        iAdapter.close();
+    }
+}
+
+class MusicPlayerFactory {
+    public GeneralMusicPlayer getPlayerType(String type) {
+        if (type == null) {
+            throw new IllegalArgumentException("PlayerType can not be a null value");
+        }
+        try {
+            PlayerType playerType = PlayerType.valueOf(type.toUpperCase());
+            IPlayerAdapter iPlayerAdapter = switch (playerType) {
+                case MP3 -&gt; new AdapterForMP3();
+                case MIDI -&gt; new AdapterForMidi();
+                case WAV -&gt; new AdapterForWAV();
+            };
+            return new GeneralMusicPlayer(iPlayerAdapter);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unsuported type : " + type);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MusicPlayerFactory musicPlayerFactory = new MusicPlayerFactory();
+        GeneralMusicPlayer player = musicPlayerFactory.getPlayerType("wav");
+        player.start("wavsound.wav"); // 撥放音樂一段時間，然後關閉檔案
+
+        player = musicPlayerFactory.getPlayerType("MP3");
+        player.start("mp3sound.mp3"); // 撥放音樂一段時間，然後關閉檔案
+
+        player = musicPlayerFactory.getPlayerType("Midi");
+        player.start("midi.mid"); // 撥放音樂一段時間，然後關閉檔案
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個程式把「播放流程」、「播放格式」還有「物件建立」三件事分開處理，實際上是把 Adapter + Template Method + 工廠模式一起用在同一個案例裡。
+
+先看核心流程，`GeneralMusicPlayer` 裡的 `start()` 把整個播放步驟固定住：開檔、播放、暫停一下、停止、關閉。這段流程不會因為檔案格式不同而改變，所以直接寫死在這裡，達到流程統一的效果。外面使用的人只要呼叫 `start()`，不用管細節。
+
+再來是不同音樂格式的問題。MP3、Midi、WAV 原本各自有自己的方法名稱（像 `playMP3()`、`playMidi()`），完全不一致。這裡用 Adapter 把它們包成同一個接口 `IPlayerAdapter`，讓外部都用 `open / play / stop / close` 這組方法。這樣一來，`GeneralMusicPlayer` 就可以完全不用知道底層是 MP3 還是 WAV，直接呼叫統一接口就好。
+
+工廠的角色在 `MusicPlayerFactory`，負責根據輸入字串去建立對應的 Adapter，再包成 `GeneralMusicPlayer` 回傳。這樣主程式只要寫 `getPlayerType("mp3")` 就能拿到可用的播放器，不需要自己 new 一堆物件。再加上 enum 去限制類型，避免亂傳字串，也順便處理大小寫問題，使用上比較安全。
+
+整體設計的重點其實很明顯：播放流程被固定在一個地方（Template Method），不同格式被包成統一接口（Adapter），建立物件集中在工廠（Factory）。這樣做的結果是，之後如果要新增 FLAC 或其他格式，只需要寫一個新的 Adapter，然後在工廠補一行對應，原本的播放流程完全不用動。
+
+簡單講，這個設計把「會變的東西」跟「不會變的東西」切開來處理。不會變的是播放流程，會變的是音樂格式。這樣分開之後，程式就變得比較穩定，也比較好擴充。
+!@#$
+</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>enum PlayerType {
+    MP3, MIDI, WAV;
+}
+
+interface IPlayerAdapter {
+    void open(String filename);
+    void play();
+    void stop();
+    void close();
+}
+
+class Midi {
+    public void openMidi(String filename) {
+        System.out.println(" Open Midi file: " + filename);
+    }
+    public void playMidi() {
+        System.out.println(" Play Midi Music.... ");
+    }
+    public void stopMidi() {
+        System.out.println(" Stop Midi Music.... ");
+    }
+    public void closeMidi() {
+        System.out.println(" Close Midi Music.... ");
+    }
+}
+
+class MP3 {
+    public void openMP3(String filename) {
+        System.out.println(" Open MP3 file: " + filename);
+    }
+    public void playMP3() {
+        System.out.println(" Play MP3 Music.... ");
+    }
+    public void stopMP3() {
+        System.out.println(" Stop MP3 Music.... ");
+    }
+    public void closeMP3() {
+        System.out.println(" Close MP3 Music.... ");
+    }
+}
+
+class WAV {
+    public void openWAV(String filename) {
+        System.out.println(" Open Wav file: " + filename);
+    }
+    public void playWAV() {
+        System.out.println(" Play Wav Music.... ");
+    }
+    public void stopWAV() {
+        System.out.println(" Stop Wav Music.... ");
+    }
+    public void closeWAV() {
+        System.out.println(" Close Wav Music.... ");
+    }
+}
+
+class AdapterForMidi implements IPlayerAdapter {
+    private Midi m = new Midi();
+
+    public void open(String filename) {
+        m.openMidi(filename);
+    }
+    public void play() {
+        m.playMidi();
+    }
+    public void stop() {
+        m.stopMidi();
+    }
+    public void close() {
+        m.closeMidi();
+    }
+}
+
+class AdapterForMP3 implements IPlayerAdapter {
+    private MP3 mp = new MP3();
+
+    public void open(String filename) {
+        mp.openMP3(filename);
+    }
+    public void play() {
+        mp.playMP3();
+    }
+    public void stop() {
+        mp.stopMP3();
+    }
+    public void close() {
+        mp.closeMP3();
+    }
+}
+
+class AdapterForWAV implements IPlayerAdapter {
+    private WAV w = new WAV();
+
+    public void open(String filename) {
+        w.openWAV(filename);
+    }
+    public void play() {
+        w.playWAV();
+    }
+    public void stop() {
+        w.stopWAV();
+    }
+    public void close() {
+        w.closeWAV();
+    }
+}
+
+class GeneralMusicPlayer {
+    protected IPlayerAdapter iAdapter;
+
+    public GeneralMusicPlayer(IPlayerAdapter iPlayerAdapter) {
+        this.iAdapter = iPlayerAdapter;
+    }
+
+    public final void start(String filename) {
+        iAdapter.open(filename);
+        iAdapter.play();
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+        }
+        iAdapter.stop();
+        iAdapter.close();
+    }
+}
+
+class MusicPlayerFactory {
+    public GeneralMusicPlayer getPlayerType(String type) {
+        if (type == null) {
+            throw new IllegalArgumentException("PlayerType can not be a null value");
+        }
+        try {
+            PlayerType playerType = PlayerType.valueOf(type.toUpperCase());
+            IPlayerAdapter iPlayerAdapter = switch (playerType) {
+                case MP3 -&gt; new AdapterForMP3();
+                case MIDI -&gt; new AdapterForMidi();
+                case WAV -&gt; new AdapterForWAV();
+            };
+            return new GeneralMusicPlayer(iPlayerAdapter);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unsuported type : " + type);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MusicPlayerFactory musicPlayerFactory = new MusicPlayerFactory();
+        GeneralMusicPlayer player = musicPlayerFactory.getPlayerType("wav");
+        player.start("wavsound.wav"); // 撥放音樂一段時間，然後關閉檔案
+
+        player = musicPlayerFactory.getPlayerType("MP3");
+        player.start("mp3sound.mp3"); // 撥放音樂一段時間，然後關閉檔案
+
+        player = musicPlayerFactory.getPlayerType("Midi");
+        player.start("midi.mid"); // 撥放音樂一段時間，然後關閉檔案
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這份程式我在做的時候，其實是想解決一個很直觀的問題：不同音樂格式（MP3、Midi、WAV）的方法名稱都不一樣，如果直接在主程式裡操作會變得很亂，而且每多一種格式就要多寫一堆判斷。
+
+所以我先做了一件事，把所有播放器統一成一個接口 `IPlayerAdapter`，讓外面都只用 `open、play、stop、close` 這幾個方法。像 MP3 原本是 `playMP3()`，我就用 Adapter 幫它轉成 `play()`，其他格式也是一樣的概念。這樣主程式就不用管底層到底是哪一種格式，寫起來會乾淨很多。
+
+接著我把播放流程固定在 `GeneralMusicPlayer` 裡面。因為不管是 MP3 還是 WAV，其實流程都一樣：開檔 → 播放 → 等一下 → 停止 → 關閉。所以我直接把這一整段寫在 `start()` 裡面。這樣好處是之後就不用每個地方都重寫一次流程，也比較不會漏掉某個步驟。
+
+然後物件建立的部分我用了一個工廠 `MusicPlayerFactory` 來處理。主程式只要丟一個字串進去，就可以拿到對應的播放器，不用自己去 new Adapter 或組裝物件。再加上 enum 去限制類型，像 "mp3"、"MP3" 都可以處理，也比較不容易出錯。
+
+實際跑的時候可以看到，不管是 WAV、MP3 還是 Midi，主程式寫法完全一樣，只是換一個 type 而已，其他都不用改。這也是我覺得這個設計比較有感的地方。
+
+整體來說，這個設計把「播放流程」、「格式差異」、「物件建立」分開處理。未來如果要加新格式，其實只要多寫一個 Adapter，然後在工廠補上去就好，原本的程式幾乎不用動。這樣在改功能或擴充的時候會比較輕鬆，也比較不容易改壞其他地方。
+
+!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>
+請利用Factory Method 修改 多媒體播放器的例子(參考程式碼), 讓產生Adapter物件的邏輯可以獨立出來!
+</p>
+<p>
+假設測資需求如下:
+</p>
+<pre>public class Main {
+  public static void main(String[] args) {
+    GeneralMusicPlayer player = new WAVPlayer();
+	player.start("wavsound.wav"); //撥放音樂一段時間，然後關閉檔案
+	
+	player = new MP3Player();
+    player.start("mp3sound.mp3"); //撥放音樂一段時間，然後關閉檔案
+	
+    player = new MidiPlayer();
+    player.start("midi.mid");  //撥放音樂一段時間，然後關閉檔案
+  }
+}
+</pre>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">!@#$報告
+新設計有何優點?
+
+這個程式把「播放流程」、「播放格式」還有「物件建立」三件事分開處理，實際上是把 Adapter + Template Method + 工廠模式一起用在同一個案例裡。
+
+先看核心流程，`GeneralMusicPlayer` 裡的 `start()` 把整個播放步驟固定住：開檔、播放、暫停一下、停止、關閉。這段流程不會因為檔案格式不同而改變，所以直接寫死在這裡，達到流程統一的效果。外面使用的人只要呼叫 `start()`，不用管細節。
+
+再來是不同音樂格式的問題。MP3、Midi、WAV 原本各自有自己的方法名稱（像 `playMP3()`、`playMidi()`），完全不一致。這裡用 Adapter 把它們包成同一個接口 `IPlayerAdapter`，讓外部都用 `open / play / stop / close` 這組方法。這樣一來，`GeneralMusicPlayer` 就可以完全不用知道底層是 MP3 還是 WAV，直接呼叫統一接口就好。
+
+工廠的角色在 `MusicPlayerFactory`，負責根據輸入字串去建立對應的 Adapter，再包成 `GeneralMusicPlayer` 回傳。這樣主程式只要寫 `getPlayerType("mp3")` 就能拿到可用的播放器，不需要自己 new 一堆物件。再加上 enum 去限制類型，避免亂傳字串，也順便處理大小寫問題，使用上比較安全。
+
+整體設計的重點其實很明顯：播放流程被固定在一個地方（Template Method），不同格式被包成統一接口（Adapter），建立物件集中在工廠（Factory）。這樣做的結果是，之後如果要新增 FLAC 或其他格式，只需要寫一個新的 Adapter，然後在工廠補一行對應，原本的播放流程完全不用動。
+
+簡單講，這個設計把「會變的東西」跟「不會變的東西」切開來處理。不會變的是播放流程，會變的是音樂格式。這樣分開之後，程式就變得比較穩定，也比較好擴充。
+!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">enum PlayerType {
+    MP3, MIDI, WAV;
+}
+
+interface IPlayerAdapter {
+    void open(String filename);
+    void play();
+    void stop();
+    void close();
+}
+
+class Midi {
+    public void openMidi(String filename) {
+        System.out.println(" Open Midi file: " + filename);
+    }
+    public void playMidi() {
+        System.out.println(" Play Midi Music.... ");
+    }
+    public void stopMidi() {
+        System.out.println(" Stop Midi Music.... ");
+    }
+    public void closeMidi() {
+        System.out.println(" Close Midi Music.... ");
+    }
+}
+
+class MP3 {
+    public void openMP3(String filename) {
+        System.out.println(" Open MP3 file: " + filename);
+    }
+    public void playMP3() {
+        System.out.println(" Play MP3 Music.... ");
+    }
+    public void stopMP3() {
+        System.out.println(" Stop MP3 Music.... ");
+    }
+    public void closeMP3() {
+        System.out.println(" Close MP3 Music.... ");
+    }
+}
+
+class WAV {
+    public void openWAV(String filename) {
+        System.out.println(" Open Wav file: " + filename);
+    }
+    public void playWAV() {
+        System.out.println(" Play Wav Music.... ");
+    }
+    public void stopWAV() {
+        System.out.println(" Stop Wav Music.... ");
+    }
+    public void closeWAV() {
+        System.out.println(" Close Wav Music.... ");
+    }
+}
+
+class AdapterForMidi implements IPlayerAdapter {
+    private Midi m = new Midi();
+
+    public void open(String filename) {
+        m.openMidi(filename);
+    }
+    public void play() {
+        m.playMidi();
+    }
+    public void stop() {
+        m.stopMidi();
+    }
+    public void close() {
+        m.closeMidi();
+    }
+}
+
+class AdapterForMP3 implements IPlayerAdapter {
+    private MP3 mp = new MP3();
+
+    public void open(String filename) {
+        mp.openMP3(filename);
+    }
+    public void play() {
+        mp.playMP3();
+    }
+    public void stop() {
+        mp.stopMP3();
+    }
+    public void close() {
+        mp.closeMP3();
+    }
+}
+
+class AdapterForWAV implements IPlayerAdapter {
+    private WAV w = new WAV();
+
+    public void open(String filename) {
+        w.openWAV(filename);
+    }
+    public void play() {
+        w.playWAV();
+    }
+    public void stop() {
+        w.stopWAV();
+    }
+    public void close() {
+        w.closeWAV();
+    }
+}
+
+class GeneralMusicPlayer {
+    protected IPlayerAdapter iAdapter;
+
+    public GeneralMusicPlayer(IPlayerAdapter iPlayerAdapter) {
+        this.iAdapter = iPlayerAdapter;
+    }
+
+    public final void start(String filename) {
+        iAdapter.open(filename);
+        iAdapter.play();
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+        }
+        iAdapter.stop();
+        iAdapter.close();
+    }
+}
+
+class MusicPlayerFactory {
+    public GeneralMusicPlayer getPlayerType(String type) {
+        if (type == null) {
+            throw new IllegalArgumentException("PlayerType can not be a null value");
+        }
+        try {
+            PlayerType playerType = PlayerType.valueOf(type.toUpperCase());
+            IPlayerAdapter iPlayerAdapter = switch (playerType) {
+                case MP3 -&gt; new AdapterForMP3();
+                case MIDI -&gt; new AdapterForMidi();
+                case WAV -&gt; new AdapterForWAV();
+            };
+            return new GeneralMusicPlayer(iPlayerAdapter);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unsuported type : " + type);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MusicPlayerFactory musicPlayerFactory = new MusicPlayerFactory();
+        GeneralMusicPlayer player = musicPlayerFactory.getPlayerType("wav");
+        player.start("wavsound.wav"); // 撥放音樂一段時間，然後關閉檔案
+
+        player = musicPlayerFactory.getPlayerType("MP3");
+        player.start("mp3sound.mp3"); // 撥放音樂一段時間，然後關閉檔案
+
+        player = musicPlayerFactory.getPlayerType("Midi");
+        player.start("midi.mid"); // 撥放音樂一段時間，然後關閉檔案
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這份程式我在做的時候，其實是想解決一個很直觀的問題：不同音樂格式（MP3、Midi、WAV）的方法名稱都不一樣，如果直接在主程式裡操作會變得很亂，而且每多一種格式就要多寫一堆判斷。
+
+所以我先做了一件事，把所有播放器統一成一個接口 `IPlayerAdapter`，讓外面都只用 `open、play、stop、close` 這幾個方法。像 MP3 原本是 `playMP3()`，我就用 Adapter 幫它轉成 `play()`，其他格式也是一樣的概念。這樣主程式就不用管底層到底是哪一種格式，寫起來會乾淨很多。
+
+接著我把播放流程固定在 `GeneralMusicPlayer` 裡面。因為不管是 MP3 還是 WAV，其實流程都一樣：開檔 → 播放 → 等一下 → 停止 → 關閉。所以我直接把這一整段寫在 `start()` 裡面。這樣好處是之後就不用每個地方都重寫一次流程，也比較不會漏掉某個步驟。
+
+然後物件建立的部分我用了一個工廠 `MusicPlayerFactory` 來處理。主程式只要丟一個字串進去，就可以拿到對應的播放器，不用自己去 new Adapter 或組裝物件。再加上 enum 去限制類型，像 "mp3"、"MP3" 都可以處理，也比較不容易出錯。
+
+實際跑的時候可以看到，不管是 WAV、MP3 還是 Midi，主程式寫法完全一樣，只是換一個 type 而已，其他都不用改。這也是我覺得這個設計比較有感的地方。
+
+整體來說，這個設計把「播放流程」、「格式差異」、「物件建立」分開處理。未來如果要加新格式，其實只要多寫一個 Adapter，然後在工廠補上去就好，原本的程式幾乎不用動。這樣在改功能或擴充的時候會比較輕鬆，也比較不容易改壞其他地方。
+
+!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

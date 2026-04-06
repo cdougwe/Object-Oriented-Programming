@@ -1,0 +1,645 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./2_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./2_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./2_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./2_files/jquery.scrollbar.min.css">
+
+	<script src="./2_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./2_files/bootstrap.min.js.下載"></script>
+    <script src="./2_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_strategy_2">
+		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反 Strategy 模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改使得：
+1. TaxCalculator p = new TaxCalculator( );
+
+   p.setTaxStrategy( new USATax() ) ; 
+
+   System.out.println( p.calculateTax(1000) );  //回傳 100 
+
+
+2. TaxCalculator p = new TaxCalculator( );
+
+   p.setTaxStrategy( new UKTax() ) ; 
+
+   System.out.println( p.calculateTax(1000) );  //回傳 200 
+
+
+
+3. TaxCalculator p = new TaxCalculator( );
+
+   p.setTaxStrategy( new CanadaTax() ) ; 
+
+   System.out.println( p.calculateTax(1000) );  //回傳 150">
+		<input type="hidden" id="src_codes" name="src_codes" value="interface TaxStrategy {
+    double calculate(double base);
+}
+class USATax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.1;
+    }
+}
+class UKTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.2;
+    }
+}
+class CanadaTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.15;
+    }
+}
+public class TaxCalculator {
+    private TaxStrategy taxStrategy;
+    public TaxCalculator() {
+    }
+    public void setTaxStrategy(TaxStrategy taxStrategy) { this.taxStrategy = taxStrategy; }
+    public double calculateTax(int base) {
+        return taxStrategy.calculate(base);
+    }
+    public static void main(String[] args) {
+        TaxCalculator p = new TaxCalculator();
+        p.setTaxStrategy(new USATax());
+        System.out.println(p.calculateTax(1000)); // 回傳 100
+        p = new TaxCalculator();
+        p.setTaxStrategy(new UKTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 200
+        p = new TaxCalculator();
+        p.setTaxStrategy(new CanadaTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 150
+    }
+}
+!@#$報告
+新設計有何優點?
+這份程式用策略模式來做不同國家的稅金計算。
+我先定義 TaxStrategy 介面，把「計算稅金」統一成一個方法，然後讓 USATax、UKTax、CanadaTax 各自實作不同的稅率。
+TaxCalculator 不直接寫計算邏輯，而是透過 setTaxStrategy 決定用哪個策略，計算時只呼叫 calculate。
+這樣做可以在不改主程式的情況下切換或新增稅制，重點就是把會變的計算邏輯獨立出來。!@#$!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="interface TaxStrategy {
+    double calculate(double base);
+}
+
+class USATax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.1;
+    }
+}
+
+class UKTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.2;
+    }
+}
+
+class CanadaTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.15;
+    }
+}
+
+public class TaxCalculator {
+    private TaxStrategy taxStrategy;
+
+    public TaxCalculator() {
+    }
+    public void setTaxStrategy(TaxStrategy taxStrategy) { this.taxStrategy = taxStrategy; }
+    public double calculateTax(double base) {
+        return taxStrategy.calculate(base);
+    }
+    public static void main(String[] args) {
+        TaxCalculator p = new TaxCalculator();
+        p.setTaxStrategy(new USATax());
+        System.out.println(p.calculateTax(1000)); // 回傳 100
+        p = new TaxCalculator();
+        p.setTaxStrategy(new UKTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 200
+        p = new TaxCalculator();
+        p.setTaxStrategy(new CanadaTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 150
+    }
+
+}
+
+!@#$報告
+新設計有何優點?
+
+這個程式示範了策略模式（Strategy Pattern）在計算稅額上的應用。`TaxStrategy` 介面定義了一個統一的 `calculate(double base)` 方法，不同國家的稅制透過實作這個介面來提供各自的計算邏輯。像 `USATax`、`UKTax`、`CanadaTax` 分別實作了美國、英國、加拿大的稅率計算。
+
+`TaxCalculator` 則是使用策略的上下文（Context），它不直接知道稅率細節，而是透過 `setTaxStrategy` 注入不同的策略物件。當呼叫 `calculateTax` 時，它會委託目前策略去計算稅額。這樣的設計讓程式非常彈性：如果未來要新增其他國家的稅制，只要新增對應策略類別，不必改變 `TaxCalculator` 本身的程式碼，符合開放封閉原則（Open-Closed Principle）。
+
+程式流程很簡單：建立 `TaxCalculator` 物件，設定策略（例如 `USATax`），再呼叫 `calculateTax(1000)` 得到稅額 100。接著更換策略為 `UKTax`，同樣輸入 1000 得到稅額 200，再換成 `CanadaTax` 得到 150。整個過程展示了策略模式如何用統一介面動態切換不同的演算法，而不改變使用端邏輯，維護與擴充都更方便。
+!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生程式與原始設計的主要差異只有一行：TaxCalculator 的 calculateTax 方法參數型態由 int 改成 double。這不影響執行正確性，甚至讓計算更彈性。此外，報告部分針對策略模式的設計、程式彈性以及開放封閉原則闡述明確，內容符合題目要求，論述清楚。
+
+物件導向原則（如封裝、開放封閉、動態調整策略）都正確呈現。程式與報告內容無明顯 AI 抄襲痕跡，屬於合格自行整理。
+
+錯誤個數：0
+
+程式正確、風格良好，報告內容有深入說明新設計優點。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;雖然將 calculateTax 參數改為 double 沒有錯誤，但若要完全對齊原始題目及附件程式，參數型態可以考慮維持 int，確保與需求文件保持一致。
+
+也建議在 calculateTax 或 setTaxStrategy 時可以加上空值（null）檢查，例如:
+if (taxStrategy == null) throw new IllegalStateException("Strategy not set");
+避免使用者未設定策略就呼叫 calculateTax 造成 NullPointerException。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>能夠明確描述程式設計目標與基本設計概念。</li><li>能以自己的話說明策略模式的結構與效益。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>缺乏進一步的追問、反思、質疑或驗證 AI 回饋。</li><li>沒有主動比較其他設計做法，也未呈現自我監控或策略調整行為。</li><li>無明顯協同、查驗或深入認知參與的證據。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>可以主動提出不同方法優缺點的比較，或質疑現有設計是否有不足之處。</li><li>嘗試請 AI 解釋設計背後的原理，並對 AI 回覆進行驗證和評估。</li><li>多做設計的反思，如預測設計在不同情境下的可行性或局限。</li><li>主動要求範例測試或自行驗證設計結果。</li></ul>
+
+					<p>總評</p>
+					<pre>整體互動以正確描述策略模式為主，內容明確但未展現認知、反思、策略調整等高層次互動。各面向多屬表層，較無深度合作或高主體性學習行為。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>interface TaxStrategy {
+    double calculate(double base);
+}
+
+class USATax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.1;
+    }
+}
+
+class UKTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.2;
+    }
+}
+
+class CanadaTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.15;
+    }
+}
+
+public class TaxCalculator {
+    private TaxStrategy taxStrategy;
+
+    public TaxCalculator() {
+    }
+    public void setTaxStrategy(TaxStrategy taxStrategy) { this.taxStrategy = taxStrategy; }
+    public double calculateTax(double base) {
+        return taxStrategy.calculate(base);
+    }
+    public static void main(String[] args) {
+        TaxCalculator p = new TaxCalculator();
+        p.setTaxStrategy(new USATax());
+        System.out.println(p.calculateTax(1000)); // 回傳 100
+        p = new TaxCalculator();
+        p.setTaxStrategy(new UKTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 200
+        p = new TaxCalculator();
+        p.setTaxStrategy(new CanadaTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 150
+    }
+
+}
+
+!@#$報告
+新設計有何優點?
+這份程式用策略模式來做不同國家的稅金計算。
+我先定義 TaxStrategy 介面，把「計算稅金」統一成一個方法，然後讓 USATax、UKTax、CanadaTax 各自實作不同的稅率。
+TaxCalculator 不直接寫計算邏輯，而是透過 setTaxStrategy 決定用哪個策略，計算時只呼叫 calculate。
+這樣做可以在不改主程式的情況下切換或新增稅制，重點就是把會變的計算邏輯獨立出來。!@#$!@#$
+</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface TaxStrategy {
+    double calculate(double base);
+}
+
+class USATax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.1;
+    }
+}
+
+class UKTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.2;
+    }
+}
+
+class CanadaTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.15;
+    }
+}
+
+public class TaxCalculator {
+    private TaxStrategy taxStrategy;
+
+    public TaxCalculator() {
+    }
+    public void setTaxStrategy(TaxStrategy taxStrategy) { this.taxStrategy = taxStrategy; }
+    public double calculateTax(double base) {
+        return taxStrategy.calculate(base);
+    }
+    public static void main(String[] args) {
+        TaxCalculator p = new TaxCalculator();
+        p.setTaxStrategy(new USATax());
+        System.out.println(p.calculateTax(1000)); // 回傳 100
+        p = new TaxCalculator();
+        p.setTaxStrategy(new UKTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 200
+        p = new TaxCalculator();
+        p.setTaxStrategy(new CanadaTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 150
+    }
+
+}
+
+!@#$報告
+新設計有何優點?
+
+這個程式示範了策略模式（Strategy Pattern）在計算稅額上的應用。`TaxStrategy` 介面定義了一個統一的 `calculate(double base)` 方法，不同國家的稅制透過實作這個介面來提供各自的計算邏輯。像 `USATax`、`UKTax`、`CanadaTax` 分別實作了美國、英國、加拿大的稅率計算。
+
+`TaxCalculator` 則是使用策略的上下文（Context），它不直接知道稅率細節，而是透過 `setTaxStrategy` 注入不同的策略物件。當呼叫 `calculateTax` 時，它會委託目前策略去計算稅額。這樣的設計讓程式非常彈性：如果未來要新增其他國家的稅制，只要新增對應策略類別，不必改變 `TaxCalculator` 本身的程式碼，符合開放封閉原則（Open-Closed Principle）。
+
+程式流程很簡單：建立 `TaxCalculator` 物件，設定策略（例如 `USATax`），再呼叫 `calculateTax(1000)` 得到稅額 100。接著更換策略為 `UKTax`，同樣輸入 1000 得到稅額 200，再換成 `CanadaTax` 得到 150。整個過程展示了策略模式如何用統一介面動態切換不同的演算法，而不改變使用端邏輯，維護與擴充都更方便。
+!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>請檢視程式碼介面是否違反 Strategy 模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./2_files/UML1.png" target="_blank">
+ <img src="./2_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改使得：
+<pre style="width:500px; height:300px;">1. TaxCalculator p = new TaxCalculator( );<br>
+   p.setTaxStrategy( new USATax() ) ; <br>
+   System.out.println( p.calculateTax(1000) );  //回傳 100 <br>
+
+2. TaxCalculator p = new TaxCalculator( );<br>
+   p.setTaxStrategy( new UKTax() ) ; <br>
+   System.out.println( p.calculateTax(1000) );  //回傳 200 <br>
+
+
+3. TaxCalculator p = new TaxCalculator( );<br>
+   p.setTaxStrategy( new CanadaTax() ) ; <br>
+   System.out.println( p.calculateTax(1000) );  //回傳 150 <br>
+
+
+
+
+ <br>
+ <br>
+
+<p></p>
+
+</pre></div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">interface TaxStrategy {
+    double calculate(double base);
+}
+class USATax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.1;
+    }
+}
+class UKTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.2;
+    }
+}
+class CanadaTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.15;
+    }
+}
+public class TaxCalculator {
+    private TaxStrategy taxStrategy;
+    public TaxCalculator() {
+    }
+    public void setTaxStrategy(TaxStrategy taxStrategy) { this.taxStrategy = taxStrategy; }
+    public double calculateTax(int base) {
+        return taxStrategy.calculate(base);
+    }
+    public static void main(String[] args) {
+        TaxCalculator p = new TaxCalculator();
+        p.setTaxStrategy(new USATax());
+        System.out.println(p.calculateTax(1000)); // 回傳 100
+        p = new TaxCalculator();
+        p.setTaxStrategy(new UKTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 200
+        p = new TaxCalculator();
+        p.setTaxStrategy(new CanadaTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 150
+    }
+}
+!@#$報告
+新設計有何優點?
+這份程式用策略模式來做不同國家的稅金計算。
+我先定義 TaxStrategy 介面，把「計算稅金」統一成一個方法，然後讓 USATax、UKTax、CanadaTax 各自實作不同的稅率。
+TaxCalculator 不直接寫計算邏輯，而是透過 setTaxStrategy 決定用哪個策略，計算時只呼叫 calculate。
+這樣做可以在不改主程式的情況下切換或新增稅制，重點就是把會變的計算邏輯獨立出來。!@#$!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface TaxStrategy {
+    double calculate(double base);
+}
+
+class USATax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.1;
+    }
+}
+
+class UKTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.2;
+    }
+}
+
+class CanadaTax implements TaxStrategy {
+    @Override
+    public double calculate(double base) {
+        return base * 0.15;
+    }
+}
+
+public class TaxCalculator {
+    private TaxStrategy taxStrategy;
+
+    public TaxCalculator() {
+    }
+    public void setTaxStrategy(TaxStrategy taxStrategy) { this.taxStrategy = taxStrategy; }
+    public double calculateTax(double base) {
+        return taxStrategy.calculate(base);
+    }
+    public static void main(String[] args) {
+        TaxCalculator p = new TaxCalculator();
+        p.setTaxStrategy(new USATax());
+        System.out.println(p.calculateTax(1000)); // 回傳 100
+        p = new TaxCalculator();
+        p.setTaxStrategy(new UKTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 200
+        p = new TaxCalculator();
+        p.setTaxStrategy(new CanadaTax());
+        System.out.println(p.calculateTax(1000)); // 回傳 150
+    }
+
+}
+
+!@#$報告
+新設計有何優點?
+
+這個程式示範了策略模式（Strategy Pattern）在計算稅額上的應用。`TaxStrategy` 介面定義了一個統一的 `calculate(double base)` 方法，不同國家的稅制透過實作這個介面來提供各自的計算邏輯。像 `USATax`、`UKTax`、`CanadaTax` 分別實作了美國、英國、加拿大的稅率計算。
+
+`TaxCalculator` 則是使用策略的上下文（Context），它不直接知道稅率細節，而是透過 `setTaxStrategy` 注入不同的策略物件。當呼叫 `calculateTax` 時，它會委託目前策略去計算稅額。這樣的設計讓程式非常彈性：如果未來要新增其他國家的稅制，只要新增對應策略類別，不必改變 `TaxCalculator` 本身的程式碼，符合開放封閉原則（Open-Closed Principle）。
+
+程式流程很簡單：建立 `TaxCalculator` 物件，設定策略（例如 `USATax`），再呼叫 `calculateTax(1000)` 得到稅額 100。接著更換策略為 `UKTax`，同樣輸入 1000 得到稅額 200，再換成 `CanadaTax` 得到 150。整個過程展示了策略模式如何用統一介面動態切換不同的演算法，而不改變使用端邏輯，維護與擴充都更方便。
+!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

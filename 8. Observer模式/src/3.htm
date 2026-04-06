@@ -1,0 +1,581 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./3_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./3_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./3_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./3_files/jquery.scrollbar.min.css">
+
+	<script src="./3_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./3_files/bootstrap.min.js.下載"></script>
+    <script src="./3_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_observer_3">
+		<input type="hidden" id="problem" name="problem" value="假設有很多玩家(Player)關注遊戲(Game)闖關成就的變化。 
+
+請檢視程式碼介面是否違反 Observer  模式，並撰寫報告，討論新設計有何優點?
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改程式使得:
+ 	  
+  public class Main {
+    public static void main(String[] args) {
+      ISubject subject = new Game( );
+      IObserver obs  = new Player (&quot;Mary&quot;) ;  
+      subject.registerObserver( obs ) ; 
+      ((Game)subject).setAchievement(&quot;Level 2&quot;); 
+	  //Player received update from Game New Completed achievement: Level 2
+      subject.removeObserver( obs ) ; 
+  }
+}">
+		<input type="hidden" id="src_codes" name="src_codes" value="public class Game {
+    private String achievement;
+    public void setAchievement(String achievement) {
+        this.achievement = achievement;
+        notifyPlayers();
+    }
+    public void notifyPlayers() {
+        System.out.println(&quot;Notifying players about Tutorial Completed achievement: &quot; + achievement);
+    }
+}
+public class Main {
+   public static void main(String[] args) {
+ Player  p = new Player(new Game()  ) ; 
+       System.out.println( p.update() ) ;
+  }
+}
+public class Player {
+    private Game game;
+    public Player(Game game) {
+        this.game = game;
+    }
+    public void update() {
+        System.out.println(&quot;Player received update. New Tutorial Completed achievement: &quot; + game.getAchievement());
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="import java.util.ArrayList;
+
+interface ISubject {
+    void registerObserver(IObserver iObserver);
+    void removeObserver(IObserver iObserver);
+    void notifyPlayers();
+}
+
+interface IObserver {
+    void update(String level);
+}
+
+class Game implements ISubject {
+    private ArrayList&lt;IObserver&gt; iObservers = new ArrayList&lt;&gt;();
+    private String achievement;
+
+    public String getAchievement() { return achievement; }
+    public void setAchievement(String achievement) {
+        this.achievement = achievement;
+        notifyPlayers();
+    }
+
+    @Override
+    public void registerObserver(IObserver iObserver) {
+        iObservers.add(iObserver);
+    }
+    @Override
+    public void removeObserver(IObserver iObserver) {
+        iObservers.remove(iObserver);
+    }
+    @Override
+    public void notifyPlayers() {
+        System.out.println(&quot;Notifying players about Tutorial Completed achievement: &quot; + achievement);
+        for (IObserver io : iObservers) {
+            io.update(achievement);
+        }
+    }
+}
+
+class Player implements IObserver {
+    private String name;
+
+    public Player(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void update(String level) {
+        System.out.println(&quot;Player : &quot; + name + &quot; received update. New Tutorial Completed achievement: &quot; + level);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Game game = new Game();
+        IObserver obs = new Player(&quot;Mary&quot;);
+        game.registerObserver(obs);
+        game.setAchievement(&quot;Level 2&quot;); // Player received update from Game New Completed achievement: Level 2
+        game.removeObserver(obs);
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這段程式是用觀察者模式（Observer Pattern）設計的遊戲成就通知系統。整體流程就像現實遊戲裡「玩家收到成就通知」的情境：Game 代表遊戲主程式，是主題（Subject），它記錄所有想要收到成就通知的玩家；Player 是觀察者（Observer），會接收遊戲更新並顯示成就。
+
+程式運作方式是這樣的：首先建立一個 Game 物件作為主題，然後建立一個 Player 物件（例如 Mary）並註冊到遊戲中。當遊戲設定新成就（例如 setAchievement(&quot;Level 2&quot;)）時，遊戲會自動呼叫 notifyPlayers()，把最新成就傳給所有註冊的玩家。Mary 收到訊息後會印出「Player : Mary received update. New Tutorial Completed achievement: Level 2」。如果不想再接收通知，可以呼叫 removeObserver 將玩家移除。
+
+這種設計讓程式擴充性很好。將來如果想新增更多玩家，只要再建立 Player 物件並註冊即可，不需要改動遊戲本身的程式碼。遊戲和玩家之間的耦合度低，責任分明：遊戲只負責管理成就與通知，玩家只負責接收更新並處理顯示。
+
+整體來說，這個範例清楚模擬了遊戲中「多人接收成就更新」的情境，也展示了觀察者模式的核心優勢：低耦合、高擴充、維護方便。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本題重點在於檢查學生程式是否正確實作 Observer 模式，並根據 main 的需求呼叫相關方法，以及觀察報告內容是否合理且未抄襲。
+
+觀察學生程式：
+1. 程式正確設計了 ISubject（主題介面）、IObserver（觀察者介面），分別由 Game、Player 實作。
+2. Game 內部正確維護了一份觀察者清單 iObservers，能正確 registerObserver、removeObserver 並在 setAchievement 觸發 notifyPlayers。
+3. Player 透過 update 方法正確接收來自 Game 的通知。
+4. Main 依題目正確實例化物件、註冊、變更成就、移除觀察者。
+5. 顯示訊息有根據題目需求與說明完成。
+
+錯誤檢查：
+本程式完全遵循正確的物件導向設計及 Observer 模式，無明顯違反原則或寫法疏漏，因此錯誤個數為 0。
+
+報告內容評價：
+報告寫作內容邏輯通順、清楚說明觀察者模式設計優點，例如：「低耦合、高擴充、維護方便」都屬於本題預期要點。內容易讀且未見明顯 AI 直譯抄襲痕跡。
+
+故本題答案完全正確。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本次程式設計及報告皆已達到要求，若欲更進一步可再於 Game 的 notifyPlayers 方法優化訊息描述（如直接顯示變動的成就名），或於 Player 類別設計更彈性的通知方法，例如引入多型以支援不同型態通知。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>能完整描述所採用設計模式及其優缺，清晰呈現系統結構流程。</li><li>清楚交代問題情境與基本任務目標。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>僅單向敘述並評價設計優點，缺乏對AI回應的批判、追問或驗證。</li><li>未展現自我監控、策略調整或對AI回應作進一步分析。</li><li>缺乏與AI間持續討論、逐步細化、共同建構的互動歷程。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>下次可嘗試針對AI回應提出疑問或請AI比較不同設計，強化互動深度。</li><li>可主動分析或驗證AI程式碼運作、提出潛在問題或多樣化設計想法。</li><li>鼓勵進行反思，對AI結果提出成效檢驗或自我理解修正。</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動以問題說明與情境描述為主，缺乏與AI之間的互動、比較、質疑或逐步建構過程，屬於典型表層說明、陳述性互動，評分依據各面向互動證據給予1至2分，綜合判斷為表層修正（surface-refinement）取向。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>import java.util.ArrayList;
+
+interface ISubject {
+    void registerObserver(IObserver iObserver);
+    void removeObserver(IObserver iObserver);
+    void notifyPlayers();
+}
+
+interface IObserver {
+    void update(String level);
+}
+
+class Game implements ISubject {
+    private ArrayList<iobserver> iObservers = new ArrayList&lt;&gt;();
+    private String achievement;
+
+    public String getAchievement() { return achievement; }
+    public void setAchievement(String achievement) {
+        this.achievement = achievement;
+        notifyPlayers();
+    }
+
+    @Override
+    public void registerObserver(IObserver iObserver) {
+        iObservers.add(iObserver);
+    }
+    @Override
+    public void removeObserver(IObserver iObserver) {
+        iObservers.remove(iObserver);
+    }
+    @Override
+    public void notifyPlayers() {
+        System.out.println("Notifying players about Tutorial Completed achievement: " + achievement);
+        for (IObserver io : iObservers) {
+            io.update(achievement);
+        }
+    }
+}
+
+class Player implements IObserver {
+    private String name;
+
+    public Player(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void update(String level) {
+        System.out.println("Player : " + name + " received update. New Tutorial Completed achievement: " + level);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Game game = new Game();
+        IObserver obs = new Player("Mary");
+        game.registerObserver(obs);
+        game.setAchievement("Level 2"); // Player received update from Game New Completed achievement: Level 2
+        game.removeObserver(obs);
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這段程式是用觀察者模式（Observer Pattern）設計的遊戲成就通知系統。整體流程就像現實遊戲裡「玩家收到成就通知」的情境：Game 代表遊戲主程式，是主題（Subject），它記錄所有想要收到成就通知的玩家；Player 是觀察者（Observer），會接收遊戲更新並顯示成就。
+
+程式運作方式是這樣的：首先建立一個 Game 物件作為主題，然後建立一個 Player 物件（例如 Mary）並註冊到遊戲中。當遊戲設定新成就（例如 setAchievement("Level 2")）時，遊戲會自動呼叫 notifyPlayers()，把最新成就傳給所有註冊的玩家。Mary 收到訊息後會印出「Player : Mary received update. New Tutorial Completed achievement: Level 2」。如果不想再接收通知，可以呼叫 removeObserver 將玩家移除。
+
+這種設計讓程式擴充性很好。將來如果想新增更多玩家，只要再建立 Player 物件並註冊即可，不需要改動遊戲本身的程式碼。遊戲和玩家之間的耦合度低，責任分明：遊戲只負責管理成就與通知，玩家只負責接收更新並處理顯示。
+
+整體來說，這個範例清楚模擬了遊戲中「多人接收成就更新」的情境，也展示了觀察者模式的核心優勢：低耦合、高擴充、維護方便。!@#$
+</iobserver></pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>假設有很多玩家(Player)關注遊戲(Game)闖關成就的變化。 <br>
+請檢視程式碼介面是否違反 Observer  模式，並撰寫報告，討論新設計有何優點?
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./3_files/UML1.png" target="_blank">
+ <img src="./3_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改程式使得:
+<pre style="width:500px; height:300px;"> 	  
+  public class Main {
+    public static void main(String[] args) {
+      ISubject subject = new Game( );
+      IObserver obs  = new Player ("Mary") ;  
+      subject.registerObserver( obs ) ; 
+      ((Game)subject).setAchievement("Level 2"); 
+	  //Player received update from Game New Completed achievement: Level 2
+      subject.removeObserver( obs ) ; 
+  }
+}
+</pre>
+ <br>
+ <br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class Game {
+    private String achievement;
+    public void setAchievement(String achievement) {
+        this.achievement = achievement;
+        notifyPlayers();
+    }
+    public void notifyPlayers() {
+        System.out.println("Notifying players about Tutorial Completed achievement: " + achievement);
+    }
+}
+public class Main {
+   public static void main(String[] args) {
+ Player  p = new Player(new Game()  ) ; 
+       System.out.println( p.update() ) ;
+  }
+}
+public class Player {
+    private Game game;
+    public Player(Game game) {
+        this.game = game;
+    }
+    public void update() {
+        System.out.println("Player received update. New Tutorial Completed achievement: " + game.getAchievement());
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">import java.util.ArrayList;
+
+interface ISubject {
+    void registerObserver(IObserver iObserver);
+    void removeObserver(IObserver iObserver);
+    void notifyPlayers();
+}
+
+interface IObserver {
+    void update(String level);
+}
+
+class Game implements ISubject {
+    private ArrayList&lt;IObserver&gt; iObservers = new ArrayList&lt;&gt;();
+    private String achievement;
+
+    public String getAchievement() { return achievement; }
+    public void setAchievement(String achievement) {
+        this.achievement = achievement;
+        notifyPlayers();
+    }
+
+    @Override
+    public void registerObserver(IObserver iObserver) {
+        iObservers.add(iObserver);
+    }
+    @Override
+    public void removeObserver(IObserver iObserver) {
+        iObservers.remove(iObserver);
+    }
+    @Override
+    public void notifyPlayers() {
+        System.out.println("Notifying players about Tutorial Completed achievement: " + achievement);
+        for (IObserver io : iObservers) {
+            io.update(achievement);
+        }
+    }
+}
+
+class Player implements IObserver {
+    private String name;
+
+    public Player(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void update(String level) {
+        System.out.println("Player : " + name + " received update. New Tutorial Completed achievement: " + level);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Game game = new Game();
+        IObserver obs = new Player("Mary");
+        game.registerObserver(obs);
+        game.setAchievement("Level 2"); // Player received update from Game New Completed achievement: Level 2
+        game.removeObserver(obs);
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這段程式是用觀察者模式（Observer Pattern）設計的遊戲成就通知系統。整體流程就像現實遊戲裡「玩家收到成就通知」的情境：Game 代表遊戲主程式，是主題（Subject），它記錄所有想要收到成就通知的玩家；Player 是觀察者（Observer），會接收遊戲更新並顯示成就。
+
+程式運作方式是這樣的：首先建立一個 Game 物件作為主題，然後建立一個 Player 物件（例如 Mary）並註冊到遊戲中。當遊戲設定新成就（例如 setAchievement("Level 2")）時，遊戲會自動呼叫 notifyPlayers()，把最新成就傳給所有註冊的玩家。Mary 收到訊息後會印出「Player : Mary received update. New Tutorial Completed achievement: Level 2」。如果不想再接收通知，可以呼叫 removeObserver 將玩家移除。
+
+這種設計讓程式擴充性很好。將來如果想新增更多玩家，只要再建立 Player 物件並註冊即可，不需要改動遊戲本身的程式碼。遊戲和玩家之間的耦合度低，責任分明：遊戲只負責管理成就與通知，玩家只負責接收更新並處理顯示。
+
+整體來說，這個範例清楚模擬了遊戲中「多人接收成就更新」的情境，也展示了觀察者模式的核心優勢：低耦合、高擴充、維護方便。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

@@ -1,0 +1,785 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./1_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./1_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./1_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./1_files/jquery.scrollbar.min.css">
+
+	<script src="./1_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./1_files/bootstrap.min.js.下載"></script>
+    <script src="./1_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_strategy_1">
+		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反 Strategy 模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改使得：
+int[] data = {2, 3, 1} ;
+1. Sorter p = new Sorter( );
+   p.setSortStrategy( new BubbleSort() ) ; 
+   p.sort(data); //顯示 &quot;Using Bubble Sort&quot;
+
+2. Sorter p = new Sorter( );
+
+   p.setSortStrategy( new MergeSort() ) ; 
+   p.sort(data ); //顯示 &quot;Using Merge Sort&quot;
+
+3. Sorter p = new Sorter( );
+   p.setSortStrategy( new QuickSort() ) ; 
+   p.sort(data ); //顯示 &quot;Using Quick Sort&quot;">
+		<input type="hidden" id="src_codes" name="src_codes" value="!@#$報告
+新設計有何優點?
+
+這份程式一開始我是用策略模式來做的，目的是想讓排序演算法可以自由切換。每個排序演算法（像 BubbleSort、MergeSort、QuickSort）都實作了 SortStrategy，而 Sorter 只負責呼叫策略，這樣新增或替換排序方式就不用改別的程式碼。
+
+後來因為每個排序除了排序本身，還需要印出排序方式跟輸出結果，如果都寫在每個策略裡，會有很多重複程式碼。這時我加了 Template Method，也就是在 SortStrategy 裡寫 processSortStrategy 固定流程：先印排序方式、再排序、最後輸出。這樣每個策略只專注在演算法本身，不用管流程細節。
+
+整體來說，就是用策略模式控制「做什麼排序」，用 Template Method 控制「排序的流程順序」，兩者搭配讓程式既彈性又乾淨。!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="abstract class SortStrategy {
+    public final void processSortStrategy(int[] data) {
+        sorttype();
+        sort(data);
+        System.out.println();
+    }
+
+    abstract void sorttype();
+
+    abstract void sort(int[] data);
+}
+
+class Swap {
+    public Swap() {
+    }
+
+    public static void swap(int[] data, int x, int y) {
+        int t = data[x];
+        data[x] = data[y];
+        data[y] = t;
+    }
+}
+
+class OutputArray {
+    public OutputArray() {
+    }
+    public static void output(int[] data) {
+        for (int i : data) {
+            System.out.print(i + &quot; &quot;);
+        }
+    }
+}
+
+class BubbleSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println(&quot;Using Bubble Sort&quot;);
+    }
+    @Override
+    public void sort(int[] data) {
+        bubbleSort(data, data.length);
+        OutputArray.output(data);
+    }
+
+    private void bubbleSort(int[] data, int length) {
+        for (int i = 0; i &lt; data.length; i++) {
+            for (int j = 1; j &lt; data.length - i; j++) {
+                if (data[j - 1] &gt; data[j])
+                    Swap.swap(data, j - 1, j);
+            }
+        }
+    }
+}
+
+class MergeSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println(&quot;Using Merge Sort&quot;);
+    }
+    @Override
+    void sort(int[] data) {
+        mergeSort(data, 0, data.length - 1);
+        OutputArray.output(data);
+    }
+
+    private void mergeSort(int[] arr, int left, int right) {
+        if (left &lt; right) {
+            int middle = left + (right - left) / 2;
+            mergeSort(arr, left, middle);
+            mergeSort(arr, middle + 1, right);
+            merge(arr, left, middle, right);
+        }
+    }
+
+    private void merge(int[] arr, int left, int middle, int right) {
+        int[] L = java.util.Arrays.copyOfRange(arr, left, middle + 1);
+        int[] R = java.util.Arrays.copyOfRange(arr, middle + 1, right + 1);
+        int i = 0, j = 0, k = left;
+        while (i &lt; L.length &amp;&amp; j &lt; R.length)
+            arr[k++] = (L[i] &lt;= R[j]) ? L[i++] : R[j++];
+        while (i &lt; L.length)
+            arr[k++] = L[i++];
+        while (j &lt; R.length)
+            arr[k++] = R[j++];
+    }
+}
+
+class QuickSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println(&quot;Using Quick Sort&quot;);
+    }
+    @Override
+    public void sort(int[] data) {
+        quickSort(data, 0, data.length - 1);
+        OutputArray.output(data);
+    }
+    private void quickSort(int[] data, int low, int high) {
+        if (low &gt;= high)
+            return;
+
+        int left = low, right = high, pivot = data[low], i = low + 1;
+
+        while (i &lt;= right) {
+            if (pivot &gt; data[i])
+                Swap.swap(data, i++, left++);
+            else if (pivot &lt; data[i])
+                Swap.swap(data, i, right--);
+            else i++;
+        }
+        quickSort(data, low, left - 1);
+        quickSort(data, right + 1, high);
+    }
+
+}
+
+public class Sorter {
+    private SortStrategy sortStrategy;
+
+    public Sorter() {
+    }
+    public void setSortStrategy(SortStrategy sortStrategy) { this.sortStrategy = sortStrategy; }
+    public void sort(int[] data) {
+        sortStrategy.processSortStrategy(data);
+    }
+    public static void main(String[] args) {
+        int[] data = { 2, 3, 1 };
+        Sorter p = new Sorter();
+        p.setSortStrategy(new BubbleSort());
+        p.sort(data);
+        p = new Sorter();
+        p.setSortStrategy(new MergeSort());
+        p.sort(data); // 顯示 &quot;Using Merge Sort&quot;
+        p = new Sorter();
+        p.setSortStrategy(new QuickSort());
+        p.sort(data); // 顯示 &quot;Using Quick Sort&quot;
+    }
+}
+
+!@#$報告
+新設計有何優點?
+
+這份程式一開始我是用策略模式來做的，目的是想讓排序演算法可以自由切換。每個排序演算法（像 BubbleSort、MergeSort、QuickSort）都實作了 SortStrategy，而 Sorter 只負責呼叫策略，這樣新增或替換排序方式就不用改別的程式碼。
+
+後來因為每個排序除了排序本身，還需要印出排序方式跟輸出結果，如果都寫在每個策略裡，會有很多重複程式碼。這時我加了 Template Method，也就是在 SortStrategy 裡寫 processSortStrategy 固定流程：先印排序方式、再排序、最後輸出。這樣每個策略只專注在演算法本身，不用管流程細節。
+
+整體來說，就是用策略模式控制「做什麼排序」，用 Template Method 控制「排序的流程順序」，兩者搭配讓程式既彈性又乾淨。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;一、程式分析錯誤個數：
+1. 程式介面（程式結構）完全符合 Strategy 模式與 Template Method 模式的結合。Sorter 類別持有 SortStrategy，且用 setSortStrategy 方法切換行為，每個排序演算法都有獨立的實作，程式碼重構後的重複流程正確交給父類別的 final 方法控管，物件導向分工清楚，並無設計或語法錯誤。
+2. 指定的測試流程與執行結果可正常達成。
+
+二、報告判斷：
+報告內容明確指出採用策略模式與搭配樣板方法模式的原因，說明了演算法切換彈性、集中流程步驟、減少重複等優點，與實作相符合。內容流暢、邏輯明確且未見抄襲AI痕跡。
+
+三、物件導向與設計模式檢查：
+- 系統符合封裝、開放封閉原則，可隨時新增排序策略。
+- Sorter 只有維護 Strategy，排序細節交給策略物件。
+- Template Method 把流程固定住，實作良好。
+無明顯設計違誤。
+
+所得分數原因：程式碼 70/70，報告 30/30，故總分 100。
+&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本程式設計正確，無必須修改處。目前的 Template Method 配合策略模式設計十分標準，已能達到靈活擴充。若要再提升，可考慮將陣列輸出格式設定為參數傳遞或由策略外部控制、Exception 處理等，但非必要修改。加油！&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">2.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">共同建構 (co-constructive)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>問題定義及設計目標明確，能自我反省現有設計不足並提出解決方案。</li><li>清楚規劃、組織程式結構，且報告文筆明確，階段性總結能力佳。</li><li>能夠逐步優化方案並和AI互動做進一步討論。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>幾乎未出現對AI回應的追問、質疑、比較、驗證等高層次互動。</li><li>尚未主動要求釐清底層原理或請AI說明思路差異。</li><li>互動偏重於設計實作和表層修正，缺乏追本溯源或交互驗證。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>可以主動請AI比較多種OOP設計（例如單用Strategy與Template的優劣），並請AI舉出更多實作情境或反例。</li><li>嘗試提出自己的質疑，例如：這樣設計是否有拆分不夠好的地方？或請AI舉出維護／擴展時可能會遇到的情境。</li><li>實際測試程式、驗證不同策略切換的結果，再詢問AI這些結果是否符合預期，進一步提升反思與驗證層次。</li></ul>
+
+					<p>總評</p>
+					<pre>本次對話展現明顯的目標設定、系統規劃及協同編輯風格，且能將討論精煉成文字報告。學生具備主動規劃及優化設計的能力並能順暢與AI互動，但尚未抓住AI回答進行更深認知互動，亦缺乏後設認識和主動求證步驟。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>程式一多起來override好礙眼能不寫嗎</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>這種紀要流程又要多種演算法要不乾脆把那個templatemethod也弄進來</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>abstract class SortStrategy {
+    public final void processSortStrategy(int[] data) {
+        sorttype();
+        sort(data);
+        System.out.println();
+    }
+
+    abstract void sorttype();
+
+    abstract void sort(int[] data);
+}
+
+class Swap {
+    public Swap() {
+    }
+
+    public static void swap(int[] data, int x, int y) {
+        int t = data[x];
+        data[x] = data[y];
+        data[y] = t;
+    }
+}
+
+class OutputArray {
+    public OutputArray() {
+    }
+    public static void output(int[] data) {
+        for (int i : data) {
+            System.out.print(i + " ");
+        }
+    }
+}
+
+class BubbleSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println("Using Bubble Sort");
+    }
+    @Override
+    public void sort(int[] data) {
+        bubbleSort(data, data.length);
+        OutputArray.output(data);
+    }
+
+    private void bubbleSort(int[] data, int length) {
+        for (int i = 0; i &lt; data.length; i++) {
+            for (int j = 1; j &lt; data.length - i; j++) {
+                if (data[j - 1] &gt; data[j])
+                    Swap.swap(data, j - 1, j);
+            }
+        }
+    }
+}
+
+class MergeSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println("Using Merge Sort");
+    }
+    @Override
+    void sort(int[] data) {
+        mergeSort(data, 0, data.length - 1);
+        OutputArray.output(data);
+    }
+
+    private void mergeSort(int[] arr, int left, int right) {
+        if (left &lt; right) {
+            int middle = left + (right - left) / 2;
+            mergeSort(arr, left, middle);
+            mergeSort(arr, middle + 1, right);
+            merge(arr, left, middle, right);
+        }
+    }
+
+    private void merge(int[] arr, int left, int middle, int right) {
+        int[] L = java.util.Arrays.copyOfRange(arr, left, middle + 1);
+        int[] R = java.util.Arrays.copyOfRange(arr, middle + 1, right + 1);
+        int i = 0, j = 0, k = left;
+        while (i &lt; L.length &amp;&amp; j &lt; R.length)
+            arr[k++] = (L[i] &lt;= R[j]) ? L[i++] : R[j++];
+        while (i &lt; L.length)
+            arr[k++] = L[i++];
+        while (j &lt; R.length)
+            arr[k++] = R[j++];
+    }
+}
+
+class QuickSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println("Using Quick Sort");
+    }
+    @Override
+    public void sort(int[] data) {
+        quickSort(data, 0, data.length - 1);
+        OutputArray.output(data);
+    }
+    private void quickSort(int[] data, int low, int high) {
+        if (low &gt;= high)
+            return;
+
+        int left = low, right = high, pivot = data[low], i = low + 1;
+
+        while (i &lt;= right) {
+            if (pivot &gt; data[i])
+                Swap.swap(data, i++, left++);
+            else if (pivot &lt; data[i])
+                Swap.swap(data, i, right--);
+            else i++;
+        }
+        quickSort(data, low, left - 1);
+        quickSort(data, right + 1, high);
+    }
+
+}
+
+public class Sorter {
+    private SortStrategy sortStrategy;
+
+    public Sorter() {
+    }
+    public void setSortStrategy(SortStrategy sortStrategy) { this.sortStrategy = sortStrategy; }
+    public void sort(int[] data) {
+        sortStrategy.processSortStrategy(data);
+    }
+    public static void main(String[] args) {
+        int[] data = { 2, 3, 1 };
+        Sorter p = new Sorter();
+        p.setSortStrategy(new BubbleSort());
+        p.sort(data);
+        p = new Sorter();
+        p.setSortStrategy(new MergeSort());
+        p.sort(data); // 顯示 "Using Merge Sort"
+        p = new Sorter();
+        p.setSortStrategy(new QuickSort());
+        p.sort(data); // 顯示 "Using Quick Sort"
+    }
+}
+
+!@#$報告
+新設計有何優點?
+
+這份程式一開始我是用策略模式來做的，目的是想讓排序演算法可以自由切換。每個排序演算法（像 BubbleSort、MergeSort、QuickSort）都實作了 SortStrategy，而 Sorter 只負責呼叫策略，這樣新增或替換排序方式就不用改別的程式碼。
+
+後來因為每個排序除了排序本身，還需要印出排序方式跟輸出結果，如果都寫在每個策略裡，會有很多重複程式碼。這時我加了 Template Method，也就是在 SortStrategy 裡寫 processSortStrategy 固定流程：先印排序方式、再排序、最後輸出。這樣每個策略只專注在演算法本身，不用管流程細節。
+
+整體來說，就是用策略模式控制「做什麼排序」，用 Template Method 控制「排序的流程順序」，兩者搭配讓程式既彈性又乾淨。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>請檢視程式碼介面是否違反 Strategy 模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./1_files/UML1.png" target="_blank">
+ <img src="./1_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改使得：
+<pre style="width:500px; height:300px;">int[] data = {2, 3, 1} ;
+1. Sorter p = new Sorter( );
+   p.setSortStrategy( new BubbleSort() ) ; 
+   p.sort(data); //顯示 "Using Bubble Sort"
+
+2. Sorter p = new Sorter( );<br>
+   p.setSortStrategy( new MergeSort() ) ; 
+   p.sort(data ); //顯示 "Using Merge Sort"
+
+3. Sorter p = new Sorter( );
+   p.setSortStrategy( new QuickSort() ) ; 
+   p.sort(data ); //顯示 "Using Quick Sort"
+
+</pre>
+
+ <br>
+ <br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">!@#$報告
+新設計有何優點?
+
+這份程式一開始我是用策略模式來做的，目的是想讓排序演算法可以自由切換。每個排序演算法（像 BubbleSort、MergeSort、QuickSort）都實作了 SortStrategy，而 Sorter 只負責呼叫策略，這樣新增或替換排序方式就不用改別的程式碼。
+
+後來因為每個排序除了排序本身，還需要印出排序方式跟輸出結果，如果都寫在每個策略裡，會有很多重複程式碼。這時我加了 Template Method，也就是在 SortStrategy 裡寫 processSortStrategy 固定流程：先印排序方式、再排序、最後輸出。這樣每個策略只專注在演算法本身，不用管流程細節。
+
+整體來說，就是用策略模式控制「做什麼排序」，用 Template Method 控制「排序的流程順序」，兩者搭配讓程式既彈性又乾淨。!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">abstract class SortStrategy {
+    public final void processSortStrategy(int[] data) {
+        sorttype();
+        sort(data);
+        System.out.println();
+    }
+
+    abstract void sorttype();
+
+    abstract void sort(int[] data);
+}
+
+class Swap {
+    public Swap() {
+    }
+
+    public static void swap(int[] data, int x, int y) {
+        int t = data[x];
+        data[x] = data[y];
+        data[y] = t;
+    }
+}
+
+class OutputArray {
+    public OutputArray() {
+    }
+    public static void output(int[] data) {
+        for (int i : data) {
+            System.out.print(i + " ");
+        }
+    }
+}
+
+class BubbleSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println("Using Bubble Sort");
+    }
+    @Override
+    public void sort(int[] data) {
+        bubbleSort(data, data.length);
+        OutputArray.output(data);
+    }
+
+    private void bubbleSort(int[] data, int length) {
+        for (int i = 0; i &lt; data.length; i++) {
+            for (int j = 1; j &lt; data.length - i; j++) {
+                if (data[j - 1] &gt; data[j])
+                    Swap.swap(data, j - 1, j);
+            }
+        }
+    }
+}
+
+class MergeSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println("Using Merge Sort");
+    }
+    @Override
+    void sort(int[] data) {
+        mergeSort(data, 0, data.length - 1);
+        OutputArray.output(data);
+    }
+
+    private void mergeSort(int[] arr, int left, int right) {
+        if (left &lt; right) {
+            int middle = left + (right - left) / 2;
+            mergeSort(arr, left, middle);
+            mergeSort(arr, middle + 1, right);
+            merge(arr, left, middle, right);
+        }
+    }
+
+    private void merge(int[] arr, int left, int middle, int right) {
+        int[] L = java.util.Arrays.copyOfRange(arr, left, middle + 1);
+        int[] R = java.util.Arrays.copyOfRange(arr, middle + 1, right + 1);
+        int i = 0, j = 0, k = left;
+        while (i &lt; L.length &amp;&amp; j &lt; R.length)
+            arr[k++] = (L[i] &lt;= R[j]) ? L[i++] : R[j++];
+        while (i &lt; L.length)
+            arr[k++] = L[i++];
+        while (j &lt; R.length)
+            arr[k++] = R[j++];
+    }
+}
+
+class QuickSort extends SortStrategy {
+    @Override
+    public void sorttype() {
+        System.out.println("Using Quick Sort");
+    }
+    @Override
+    public void sort(int[] data) {
+        quickSort(data, 0, data.length - 1);
+        OutputArray.output(data);
+    }
+    private void quickSort(int[] data, int low, int high) {
+        if (low &gt;= high)
+            return;
+
+        int left = low, right = high, pivot = data[low], i = low + 1;
+
+        while (i &lt;= right) {
+            if (pivot &gt; data[i])
+                Swap.swap(data, i++, left++);
+            else if (pivot &lt; data[i])
+                Swap.swap(data, i, right--);
+            else i++;
+        }
+        quickSort(data, low, left - 1);
+        quickSort(data, right + 1, high);
+    }
+
+}
+
+public class Sorter {
+    private SortStrategy sortStrategy;
+
+    public Sorter() {
+    }
+    public void setSortStrategy(SortStrategy sortStrategy) { this.sortStrategy = sortStrategy; }
+    public void sort(int[] data) {
+        sortStrategy.processSortStrategy(data);
+    }
+    public static void main(String[] args) {
+        int[] data = { 2, 3, 1 };
+        Sorter p = new Sorter();
+        p.setSortStrategy(new BubbleSort());
+        p.sort(data);
+        p = new Sorter();
+        p.setSortStrategy(new MergeSort());
+        p.sort(data); // 顯示 "Using Merge Sort"
+        p = new Sorter();
+        p.setSortStrategy(new QuickSort());
+        p.sort(data); // 顯示 "Using Quick Sort"
+    }
+}
+
+!@#$報告
+新設計有何優點?
+
+這份程式一開始我是用策略模式來做的，目的是想讓排序演算法可以自由切換。每個排序演算法（像 BubbleSort、MergeSort、QuickSort）都實作了 SortStrategy，而 Sorter 只負責呼叫策略，這樣新增或替換排序方式就不用改別的程式碼。
+
+後來因為每個排序除了排序本身，還需要印出排序方式跟輸出結果，如果都寫在每個策略裡，會有很多重複程式碼。這時我加了 Template Method，也就是在 SortStrategy 裡寫 processSortStrategy 固定流程：先印排序方式、再排序、最後輸出。這樣每個策略只專注在演算法本身，不用管流程細節。
+
+整體來說，就是用策略模式控制「做什麼排序」，用 Template Method 控制「排序的流程順序」，兩者搭配讓程式既彈性又乾淨。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

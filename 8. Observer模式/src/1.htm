@@ -1,0 +1,717 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./1_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./1_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./1_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./1_files/jquery.scrollbar.min.css">
+
+	<script src="./1_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./1_files/bootstrap.min.js.下載"></script>
+    <script src="./1_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_observer_1">
+		<input type="hidden" id="problem" name="problem" value="假設有很多投資者(Investor)希望關注股票市場(StockMarket)的股價變化。
+
+請檢視程式碼介面是否違反 Observer  模式，並撰寫報告，討論新設計有何優點?
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改使得：
+ 
+  public class Main {
+    public static void main(String[] args) {
+      ISubject stock = new StockMarket( );
+      IObserver  Tom = new Investor(&quot;Tom&quot;) ;  
+      stock.register( Tom ) ;
+      ((StockMarket)stock).setPrice(100);
+      stock.remove( Tom ) ; 
+  }
+}">
+		<input type="hidden" id="src_codes" name="src_codes" value="public class Investor {
+    private StockMarket stockMarket;
+    public Investor(StockMarket stockMarket) {
+        this.stockMarket = stockMarket;
+    }
+    public void update() {
+        System.out.println(&quot;Investor received update. New stock price: &quot; + stockMarket.getPrice());
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+        Investor iv = new Investor(new StockMarket()  ) ; 
+        System.out.println( iv.update()) ;
+  }
+}
+public class StockMarket {
+    private double price;
+    public void setPrice(double price) {
+        this.price = price;
+        notifyInvestors();
+    }
+    public void notifyInvestors() {
+        System.out.println(&quot;Notifying investors about stock price change to: &quot; + price);
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="import java.util.ArrayList;
+
+interface ISubject {
+    void register(IObserver client);
+    void remove(IObserver client);
+    void notifyInvestors();
+}
+
+interface IObserver {
+    void update(double price);
+}
+
+class StockMarket implements ISubject {
+    private ArrayList&lt;IObserver&gt; observers = new ArrayList&lt;&gt;();
+    private double price;
+
+    public double getPrice() { return price; }
+    public void setPrice(double price) {
+        this.price = price;
+        notifyInvestors();
+    }
+
+    @Override
+    public void register(IObserver client) {
+        observers.add(client);
+    }
+    @Override
+    public void remove(IObserver client) {
+        observers.remove(client);
+    }
+    @Override
+    public void notifyInvestors() {
+        System.out.println(&quot;Notifying investors about stock price change to: &quot; + price);
+        for (IObserver iObserver : observers) {
+            iObserver.update(price);
+        }
+    }
+}
+
+class Investor implements IObserver {
+    private String client;
+
+    public Investor(String client) {
+        this.client = client;
+    }
+
+    public void update(double price) {
+        System.out.println(&quot;Investor : &quot; + client + &quot; received update. New stock price: &quot; + price);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        StockMarket stock = new StockMarket();
+        IObserver Tom = new Investor(&quot;Tom&quot;);
+        stock.register(Tom);
+        stock.setPrice(100);
+        stock.remove(Tom);
+    }
+}
+!@#$報告
+新設計有何優點?
+這段程式展示了一個股票市場通知系統的觀察者模式實作，但與前一版不同的是，通知時直接傳遞股價數值，而不是透過 `StockMarket` 取得。
+
+程式中 `StockMarket` 類別扮演主題（Subject），它維護一個觀察者清單，可以註冊或移除投資人，並在價格變動時通知所有註冊觀察者。當 `setPrice()` 被呼叫時，股價更新後會自動觸發 `notifyInvestors()`，逐一呼叫每個觀察者的 `update(price)` 方法，把新的股價傳給他們。
+
+`Investor` 類別實作了 `IObserver` 介面，收到股價更新時會印出自己的名字和最新價格。在 `Main` 中，先建立股票市場和投資人，投資人註冊到市場後，當股價設定為 100 時，市場會立即通知投資人。最後，投資人被移除，不再接收後續通知。
+
+這個設計保持了股票市場和投資人之間的鬆耦合，方便未來擴充不同投資人類型或加入其他市場事件，符合事件驅動和可擴展性的設計原則。
+!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生程式符合 Observer 模式設計，已修正原本程式碼的物件導向違反（原程式 Investor 緊耦合 StockMarket，且通知並未將資料傳給觀察者）。現在所有投資人都可自由註冊到任何主題，且更新是以股價為參數進行鬆耦合傳遞。該程式未檢出明顯錯誤，架構、介面設計、方法運用完全正確，物件導向原則（OCP、依賴倒置、鬆耦合）皆有落實。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 可以將 observers 欄位宣告為 List&lt;IObserver&gt; 以符合程式設計慣例。
+2. 新增 Exception 處理讓移除未註冊觀察者時不會發生錯誤。
+3. 建議為 StockMarket 增加初始化價格的建構子。
+4. 若要符合介面呼叫統一性，Main 裡 stock 可以用 ISubject 型別取代 StockMarket。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.5</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>能夠陳述程式設計目標與解決策略，有明確功能敘述。</li><li>展現程式結構的調整與多步驟修改能力。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>缺乏主動追問、質疑、驗證、自我修正等高層次互動行為。</li><li>僅止於表層修改與描述優點，未深入比較或提出推理解釋。</li><li>未曾對 AI 產出進行驗證或策略性選擇，亦無自我監控痕跡。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試主動追問：為何這樣設計比舊版更好？有沒有潛在風險？</li><li>可針對兩版進行優劣比較或提出情境應用的討論。</li><li>嘗試提出該設計下若遭遇實務限制時的可能問題，或驗證設計是否符合自身理解，以提升互動層次。</li></ul>
+
+					<p>總評</p>
+					<pre>整體互動著重於描述編碼與表層改寫，以及對程式流程與優點的摘要說明，並未見真正的認知、反思或驗證互動，屬於『表層修正』類型；缺乏進一步的追問、比較、驗證，以及高主體性行為，導致概念理解與設計思辨較為薄弱。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>import java.util.ArrayList;
+
+interface ISubject {
+    void register(IObserver client);
+    void remove(IObserver client);
+    void notifyInvestors();
+}
+
+interface IObserver {
+    void update();
+}
+
+class StockMarket implements ISubject {
+    private ArrayList<iobserver> observers = new ArrayList&lt;&gt;();
+    private double price;
+
+    public double getPrice() { return price; }
+    public void setPrice(double price) {
+        this.price = price;
+        notifyInvestors();
+    }
+
+    @Override
+    public void register(IObserver client) {
+        observers.add(client);
+    }
+    @Override
+    public void remove(IObserver client) {
+        observers.remove(client);
+    }
+    @Override
+    public void notifyInvestors() {
+        System.out.println("Notifying investors about stock price change to: " + price);
+        for (IObserver iObserver : observers) {
+            iObserver.update();
+        }
+    }
+}
+
+class Investor implements IObserver {
+    private StockMarket stockMarket;
+    private String client;
+
+    public Investor(StockMarket stockMarket, String client) {
+        this.stockMarket = stockMarket;
+        this.client = client;
+    }
+
+    public void update() {
+        System.out.println("Investor :" + client + " received update. New stock price: " + stockMarket.getPrice());
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        StockMarket stock = new StockMarket();
+        IObserver Tom = new Investor(stock, "Tom");
+        stock.register(Tom);
+        stock.setPrice(100);
+        stock.remove(Tom);
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個程式模擬了一個股票市場通知系統，使用了觀察者模式（Observer Pattern）。股票市場類別 `StockMarket` 代表主題，它可以註冊或移除投資人，並在股價變動時通知所有註冊的觀察者。投資人類別 `Investor` 實作了觀察者介面 `IObserver`，當收到通知時會印出最新股價。
+
+在程式流程中，先建立股票市場實例，再建立投資人並註冊到市場。當股票價格透過 `setPrice()` 更新時，市場自動呼叫 `notifyInvestors()`，逐一通知所有投資人，投資人收到訊息後印出最新股價。如果投資人不想再接收通知，可以呼叫 `remove()` 取消註冊。
+
+這種設計的好處是股票市場和投資人之間是鬆耦合的，新增或移除投資人不會影響市場的運作，也方便日後擴充，例如增加不同類型的投資人或加入更多市場訊息源。此外，這個模式與現實金融系統中的即時推播通知或訂閱消息系統相似，能直觀呈現事件驅動的設計思路。
+!@#$
+</iobserver></pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>import java.util.ArrayList;
+
+interface ISubject {
+    void register(IObserver client);
+    void remove(IObserver client);
+    void notifyInvestors();
+}
+
+interface IObserver {
+    void update(double price);
+}
+
+class StockMarket implements ISubject {
+    private ArrayList<iobserver> observers = new ArrayList&lt;&gt;();
+    private double price;
+
+    public double getPrice() { return price; }
+    public void setPrice(double price) {
+        this.price = price;
+        notifyInvestors();
+    }
+
+    @Override
+    public void register(IObserver client) {
+        observers.add(client);
+    }
+    @Override
+    public void remove(IObserver client) {
+        observers.remove(client);
+    }
+    @Override
+    public void notifyInvestors() {
+        System.out.println("Notifying investors about stock price change to: " + price);
+        for (IObserver iObserver : observers) {
+            iObserver.update(price);
+        }
+    }
+}
+
+class Investor implements IObserver {
+    private String client;
+
+    public Investor(String client) {
+        this.client = client;
+    }
+
+    public void update(double price) {
+        System.out.println("Investor :" + client + " received update. New stock price: " + price);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        StockMarket stock = new StockMarket();
+        IObserver Tom = new Investor("Tom");
+        stock.register(Tom);
+        stock.setPrice(100);
+        stock.remove(Tom);
+    }
+}
+!@#$報告
+新設計有何優點?
+這段程式展示了一個股票市場通知系統的觀察者模式實作，但與前一版不同的是，通知時直接傳遞股價數值，而不是透過 `StockMarket` 取得。
+
+程式中 `StockMarket` 類別扮演主題（Subject），它維護一個觀察者清單，可以註冊或移除投資人，並在價格變動時通知所有註冊觀察者。當 `setPrice()` 被呼叫時，股價更新後會自動觸發 `notifyInvestors()`，逐一呼叫每個觀察者的 `update(price)` 方法，把新的股價傳給他們。
+
+`Investor` 類別實作了 `IObserver` 介面，收到股價更新時會印出自己的名字和最新價格。在 `Main` 中，先建立股票市場和投資人，投資人註冊到市場後，當股價設定為 100 時，市場會立即通知投資人。最後，投資人被移除，不再接收後續通知。
+
+這個設計保持了股票市場和投資人之間的鬆耦合，方便未來擴充不同投資人類型或加入其他市場事件，符合事件驅動和可擴展性的設計原則。
+!@#$
+</iobserver></pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>import java.util.ArrayList;
+
+interface ISubject {
+    void register(IObserver client);
+    void remove(IObserver client);
+    void notifyInvestors();
+}
+
+interface IObserver {
+    void update(double price);
+}
+
+class StockMarket implements ISubject {
+    private ArrayList<iobserver> observers = new ArrayList&lt;&gt;();
+    private double price;
+
+    public double getPrice() { return price; }
+    public void setPrice(double price) {
+        this.price = price;
+        notifyInvestors();
+    }
+
+    @Override
+    public void register(IObserver client) {
+        observers.add(client);
+    }
+    @Override
+    public void remove(IObserver client) {
+        observers.remove(client);
+    }
+    @Override
+    public void notifyInvestors() {
+        System.out.println("Notifying investors about stock price change to: " + price);
+        for (IObserver iObserver : observers) {
+            iObserver.update(price);
+        }
+    }
+}
+
+class Investor implements IObserver {
+    private String client;
+
+    public Investor(String client) {
+        this.client = client;
+    }
+
+    public void update(double price) {
+        System.out.println("Investor :" + client + " received update. New stock price: " + price);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        StockMarket stock = new StockMarket();
+        IObserver Tom = new Investor("Tom");
+        stock.register(Tom);
+        stock.setPrice(100);
+        stock.remove(Tom);
+    }
+}
+!@#$報告
+新設計有何優點?
+這段程式展示了一個股票市場通知系統的觀察者模式實作，但與前一版不同的是，通知時直接傳遞股價數值，而不是透過 `StockMarket` 取得。
+
+程式中 `StockMarket` 類別扮演主題（Subject），它維護一個觀察者清單，可以註冊或移除投資人，並在價格變動時通知所有註冊觀察者。當 `setPrice()` 被呼叫時，股價更新後會自動觸發 `notifyInvestors()`，逐一呼叫每個觀察者的 `update(price)` 方法，把新的股價傳給他們。
+
+`Investor` 類別實作了 `IObserver` 介面，收到股價更新時會印出自己的名字和最新價格。在 `Main` 中，先建立股票市場和投資人，投資人註冊到市場後，當股價設定為 100 時，市場會立即通知投資人。最後，投資人被移除，不再接收後續通知。
+
+這個設計保持了股票市場和投資人之間的鬆耦合，方便未來擴充不同投資人類型或加入其他市場事件，符合事件驅動和可擴展性的設計原則。
+!@#$
+</iobserver></pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>假設有很多投資者(Investor)希望關注股票市場(StockMarket)的股價變化。<br>
+請檢視程式碼介面是否違反 Observer  模式，並撰寫報告，討論新設計有何優點?
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./1_files/UML1.png" target="_blank">
+ <img src="./1_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改使得：
+<pre style="width:500px; height:300px;"> 
+  public class Main {
+    public static void main(String[] args) {
+      ISubject stock = new StockMarket( );
+      IObserver  Tom = new Investor("Tom") ;  
+      stock.register( Tom ) ;
+      ((StockMarket)stock).setPrice(100);
+      stock.remove( Tom ) ; 
+  }
+}
+</pre>
+ <br>
+ <br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class Investor {
+    private StockMarket stockMarket;
+    public Investor(StockMarket stockMarket) {
+        this.stockMarket = stockMarket;
+    }
+    public void update() {
+        System.out.println("Investor received update. New stock price: " + stockMarket.getPrice());
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+        Investor iv = new Investor(new StockMarket()  ) ; 
+        System.out.println( iv.update()) ;
+  }
+}
+public class StockMarket {
+    private double price;
+    public void setPrice(double price) {
+        this.price = price;
+        notifyInvestors();
+    }
+    public void notifyInvestors() {
+        System.out.println("Notifying investors about stock price change to: " + price);
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">import java.util.ArrayList;
+
+interface ISubject {
+    void register(IObserver client);
+    void remove(IObserver client);
+    void notifyInvestors();
+}
+
+interface IObserver {
+    void update(double price);
+}
+
+class StockMarket implements ISubject {
+    private ArrayList&lt;IObserver&gt; observers = new ArrayList&lt;&gt;();
+    private double price;
+
+    public double getPrice() { return price; }
+    public void setPrice(double price) {
+        this.price = price;
+        notifyInvestors();
+    }
+
+    @Override
+    public void register(IObserver client) {
+        observers.add(client);
+    }
+    @Override
+    public void remove(IObserver client) {
+        observers.remove(client);
+    }
+    @Override
+    public void notifyInvestors() {
+        System.out.println("Notifying investors about stock price change to: " + price);
+        for (IObserver iObserver : observers) {
+            iObserver.update(price);
+        }
+    }
+}
+
+class Investor implements IObserver {
+    private String client;
+
+    public Investor(String client) {
+        this.client = client;
+    }
+
+    public void update(double price) {
+        System.out.println("Investor : " + client + " received update. New stock price: " + price);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        StockMarket stock = new StockMarket();
+        IObserver Tom = new Investor("Tom");
+        stock.register(Tom);
+        stock.setPrice(100);
+        stock.remove(Tom);
+    }
+}
+!@#$報告
+新設計有何優點?
+這段程式展示了一個股票市場通知系統的觀察者模式實作，但與前一版不同的是，通知時直接傳遞股價數值，而不是透過 `StockMarket` 取得。
+
+程式中 `StockMarket` 類別扮演主題（Subject），它維護一個觀察者清單，可以註冊或移除投資人，並在價格變動時通知所有註冊觀察者。當 `setPrice()` 被呼叫時，股價更新後會自動觸發 `notifyInvestors()`，逐一呼叫每個觀察者的 `update(price)` 方法，把新的股價傳給他們。
+
+`Investor` 類別實作了 `IObserver` 介面，收到股價更新時會印出自己的名字和最新價格。在 `Main` 中，先建立股票市場和投資人，投資人註冊到市場後，當股價設定為 100 時，市場會立即通知投資人。最後，投資人被移除，不再接收後續通知。
+
+這個設計保持了股票市場和投資人之間的鬆耦合，方便未來擴充不同投資人類型或加入其他市場事件，符合事件驅動和可擴展性的設計原則。
+!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

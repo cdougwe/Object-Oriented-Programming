@@ -1,0 +1,536 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./4_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./4_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./4_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./4_files/jquery.scrollbar.min.css">
+
+	<script src="./4_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./4_files/bootstrap.min.js.下載"></script>
+    <script src="./4_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_strategy_4">
+		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反 Strategy 模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改使得：
+1. ReportGenerator p = new ReportGenerator( );
+   p.setReportStrategy( new ChemistryReport() ) ; 
+   p.generateReport(); //顯示 &quot;Generating Chemistry report&quot; 
+
+2. ReportGenerator p = new ReportGenerator( );
+   p.setReportStrategy( new MathematicsReport() ) ; 
+   p.generateReport( ); //顯示 &quot;Generating Mathematics report&quot; 
+
+3. ReportGenerator p = new ReportGenerator( );
+   p.setReportStrategy( new PhysicsReport() ) ; 
+   p.generateReport( ); //顯示 &quot;Generating Physics report&quot;">
+		<input type="hidden" id="src_codes" name="src_codes" value="public class Main {
+  public static void main(String[] args) {
+    	 ReportGenerator rg= new ReportGenerator();
+    	 rg. generateReport(&quot;Chemistry&quot;) ;
+   }
+}
+
+
+public class ReportGenerator {
+    public void generateReport(String reportType) {
+        if (reportType.equals(&quot;Mathematics&quot;)) {
+            // 生成Mathematics報告邏輯
+            System.out.println(&quot;Generating Mathematics report&quot;);
+        } else if (reportType.equals(&quot;Physics&quot;)) {
+            // 生成Physics報告邏輯
+            System.out.println(&quot;Generating Physics report&quot;);
+        } else if (reportType.equals(&quot;Chemistry&quot;)) {
+            // 生成Chemistry報告邏輯
+            System.out.println(&quot;Generating Chemistry report&quot;);
+        }
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="interface ReportStrategy {
+    void generate();
+}
+
+class ChemistryReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println(&quot;Generating Chemistry report&quot;);
+    }
+}
+
+class MathematicsReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println(&quot;Generating Mathematics report&quot;);
+    }
+}
+
+class PhysicsReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println(&quot;Generating Physics report&quot;);
+    }
+}
+
+public class ReportGenerator {
+    private ReportStrategy reportStrategy;
+
+    public ReportGenerator() {
+    }
+    public void setReportStrategy(ReportStrategy reportStrategy) { this.reportStrategy = reportStrategy; }
+    public void generateReport() {
+        reportStrategy.generate();
+    }
+    public static void main(String[] args) {
+        ReportGenerator p = new ReportGenerator();
+        p.setReportStrategy(new ChemistryReport());
+        p.generateReport(); // 顯示 &quot;Generating Chemistry report&quot;
+
+        p = new ReportGenerator();
+        p.setReportStrategy(new MathematicsReport());
+        p.generateReport(); // 顯示 &quot;Generating Mathematics report&quot;
+
+        p = new ReportGenerator();
+        p.setReportStrategy(new PhysicsReport());
+        p.generateReport(); // 顯示 &quot;Generating Physics report&quot;
+    }
+}
+
+!@#$報告
+新設計有何優點?
+這段程式示範了策略模式（Strategy Pattern）在報告生成上的應用。`ReportStrategy` 介面定義了一個統一的 `generate()` 方法，不同科目的報告透過實作這個介面來提供各自的生成邏輯，例如 `ChemistryReport`、`MathematicsReport`、`PhysicsReport` 分別對應化學、數學與物理的報告生成。
+
+`ReportGenerator` 是策略模式的上下文（Context），它不直接知道報告內容的細節，而是透過 `setReportStrategy` 注入不同的策略物件。當呼叫 `generateReport()` 時，它會委託目前策略物件執行生成。這種設計讓程式非常靈活，如果未來要新增其他科目的報告，只需新增對應策略類別，不必改動 `ReportGenerator` 本身的程式碼，符合開放封閉原則。
+
+程式執行流程簡單明瞭：先建立 `ReportGenerator` 物件，再依序設定不同科目的策略並呼叫 `generateReport()`。第一次生成化學報告，印出 “Generating Chemistry report”；第二次生成數學報告，印出 “Generating Mathematics report”；第三次生成物理報告，印出 “Generating Physics report”。整個過程展示策略模式如何用統一介面動態切換不同演算法，維護與擴充更方便，程式也更容易理解與管理。
+!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 程式碼錯誤個數：0。學生程式完全正確實作了 Strategy 模式，介面、具體策略類別、Context（ReportGenerator）設計結構皆符合理論。
+
+2. 程式正確性分析與理由：
+- 介面設計：ReportStrategy 作為策略介面，嚴謹且有顯示一致性。
+- 各科別（Chemistry、Mathematics、Physics）分別以具體策略實作，並覆寫 generate() 方法。
+- ReportGenerator 類別將策略類別依賴自介面，並以 Composition 方式設定（setReportStrategy），完整呈現解耦與可擴充性。
+- generateReport() 僅調用策略物件的 generate()，本體完全不關心如何產生報告，符合 Strategy 模式精髓。
+- main() 方法有測試不同策略切換與執行結果，完全依照題目要求。
+
+3. 報告部分：
+- 內容完整解釋策略模式的介面與應用，解釋了易於擴充、開放封閉原則，以及上下文和策略之間的關係，符合題目新設計優點說明。
+- 語句明確流暢，內容無明顯AI自動生成可疑跡象，引用專業詞彙、有個人理解與行文。
+
+總結：程式設計沒有錯誤，報告寫得合理無抄襲嫌疑，完全滿足題目要求。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 可在 ReportGenerator.generateReport() 內檢查 reportStrategy 是否已設定（避免 NullPointerException），並提示使用者應先 setReportStrategy。
+2. 可將 main() 測試程式碼獨立於 ReportGenerator 外部，提升模組分離。
+3. 若需更進一步，可考慮方法命名語義更清楚（如 printReport 而非 generate，但這屬小幅優化）。
+4. 報告部分已寫得很完整，如需加強，可再舉具體加新報告類別的示例。
+總體無需大幅修正。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">答案導向 (answer-oriented)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>能完整描述設計模式與程式邏輯。</li><li>正確闡述策略模式的應用與優點。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>沒有對 AI 或程式輸出進行驗證、測試或質疑。</li><li>缺乏深入的比較、推論、反思或多元探究。</li><li>缺少自我監控、策略調整與協同互動痕跡。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>下次可明確比較不同設計模式，並評論其優缺點。</li><li>可以實際測試或反思示範程式，質疑或驗證其正確性與適用性。</li><li>嘗試與 AI 進行更為互動式的對話，例如要求更動設計、增加額外條件、追問原理或潛在風險。</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動主要停留於程式展示與基本設計理念說明，屬於答案導向型態。缺乏追問、檢證、比較、策略調整與深入認知互動，未將 AI 當成認知夥伴，而是將其單純視為知識或答案來源。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>interface ReportStrategy {
+    void generate();
+}
+
+class ChemistryReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println("Generating Chemistry report");
+    }
+}
+
+class MathematicsReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println("Generating Mathematics report");
+    }
+}
+
+class PhysicsReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println("Generating Physics report");
+    }
+}
+
+public class ReportGenerator {
+    private ReportStrategy reportStrategy;
+
+    public ReportGenerator() {
+    }
+    public void setReportStrategy(ReportStrategy reportStrategy) { this.reportStrategy = reportStrategy; }
+    public void generateReport() {
+        reportStrategy.generate();
+    }
+    public static void main(String[] args) {
+        ReportGenerator p = new ReportGenerator();
+        p.setReportStrategy(new ChemistryReport());
+        p.generateReport(); // 顯示 "Generating Chemistry report"
+
+        p = new ReportGenerator();
+        p.setReportStrategy(new MathematicsReport());
+        p.generateReport(); // 顯示 "Generating Mathematics report"
+
+        p = new ReportGenerator();
+        p.setReportStrategy(new PhysicsReport());
+        p.generateReport(); // 顯示 "Generating Physics report"
+    }
+}
+
+!@#$報告
+新設計有何優點?
+這段程式示範了策略模式（Strategy Pattern）在報告生成上的應用。`ReportStrategy` 介面定義了一個統一的 `generate()` 方法，不同科目的報告透過實作這個介面來提供各自的生成邏輯，例如 `ChemistryReport`、`MathematicsReport`、`PhysicsReport` 分別對應化學、數學與物理的報告生成。
+
+`ReportGenerator` 是策略模式的上下文（Context），它不直接知道報告內容的細節，而是透過 `setReportStrategy` 注入不同的策略物件。當呼叫 `generateReport()` 時，它會委託目前策略物件執行生成。這種設計讓程式非常靈活，如果未來要新增其他科目的報告，只需新增對應策略類別，不必改動 `ReportGenerator` 本身的程式碼，符合開放封閉原則。
+
+程式執行流程簡單明瞭：先建立 `ReportGenerator` 物件，再依序設定不同科目的策略並呼叫 `generateReport()`。第一次生成化學報告，印出 “Generating Chemistry report”；第二次生成數學報告，印出 “Generating Mathematics report”；第三次生成物理報告，印出 “Generating Physics report”。整個過程展示策略模式如何用統一介面動態切換不同演算法，維護與擴充更方便，程式也更容易理解與管理。
+!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>請檢視程式碼介面是否違反 Strategy 模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./4_files/UML1.png" target="_blank">
+ <img src="./4_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改使得：
+<pre style="width:500px; height:300px;">1. ReportGenerator p = new ReportGenerator( );
+   p.setReportStrategy( new ChemistryReport() ) ; 
+   p.generateReport(); //顯示 "Generating Chemistry report" 
+
+2. ReportGenerator p = new ReportGenerator( );
+   p.setReportStrategy( new MathematicsReport() ) ; 
+   p.generateReport( ); //顯示 "Generating Mathematics report" 
+
+3. ReportGenerator p = new ReportGenerator( );
+   p.setReportStrategy( new PhysicsReport() ) ; 
+   p.generateReport( ); //顯示 "Generating Physics report" 
+</pre>
+
+
+
+ <br>
+ <br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class Main {
+  public static void main(String[] args) {
+    	 ReportGenerator rg= new ReportGenerator();
+    	 rg. generateReport("Chemistry") ;
+   }
+}
+
+
+public class ReportGenerator {
+    public void generateReport(String reportType) {
+        if (reportType.equals("Mathematics")) {
+            // 生成Mathematics報告邏輯
+            System.out.println("Generating Mathematics report");
+        } else if (reportType.equals("Physics")) {
+            // 生成Physics報告邏輯
+            System.out.println("Generating Physics report");
+        } else if (reportType.equals("Chemistry")) {
+            // 生成Chemistry報告邏輯
+            System.out.println("Generating Chemistry report");
+        }
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface ReportStrategy {
+    void generate();
+}
+
+class ChemistryReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println("Generating Chemistry report");
+    }
+}
+
+class MathematicsReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println("Generating Mathematics report");
+    }
+}
+
+class PhysicsReport implements ReportStrategy {
+    @Override
+    public void generate() {
+        System.out.println("Generating Physics report");
+    }
+}
+
+public class ReportGenerator {
+    private ReportStrategy reportStrategy;
+
+    public ReportGenerator() {
+    }
+    public void setReportStrategy(ReportStrategy reportStrategy) { this.reportStrategy = reportStrategy; }
+    public void generateReport() {
+        reportStrategy.generate();
+    }
+    public static void main(String[] args) {
+        ReportGenerator p = new ReportGenerator();
+        p.setReportStrategy(new ChemistryReport());
+        p.generateReport(); // 顯示 "Generating Chemistry report"
+
+        p = new ReportGenerator();
+        p.setReportStrategy(new MathematicsReport());
+        p.generateReport(); // 顯示 "Generating Mathematics report"
+
+        p = new ReportGenerator();
+        p.setReportStrategy(new PhysicsReport());
+        p.generateReport(); // 顯示 "Generating Physics report"
+    }
+}
+
+!@#$報告
+新設計有何優點?
+這段程式示範了策略模式（Strategy Pattern）在報告生成上的應用。`ReportStrategy` 介面定義了一個統一的 `generate()` 方法，不同科目的報告透過實作這個介面來提供各自的生成邏輯，例如 `ChemistryReport`、`MathematicsReport`、`PhysicsReport` 分別對應化學、數學與物理的報告生成。
+
+`ReportGenerator` 是策略模式的上下文（Context），它不直接知道報告內容的細節，而是透過 `setReportStrategy` 注入不同的策略物件。當呼叫 `generateReport()` 時，它會委託目前策略物件執行生成。這種設計讓程式非常靈活，如果未來要新增其他科目的報告，只需新增對應策略類別，不必改動 `ReportGenerator` 本身的程式碼，符合開放封閉原則。
+
+程式執行流程簡單明瞭：先建立 `ReportGenerator` 物件，再依序設定不同科目的策略並呼叫 `generateReport()`。第一次生成化學報告，印出 “Generating Chemistry report”；第二次生成數學報告，印出 “Generating Mathematics report”；第三次生成物理報告，印出 “Generating Physics report”。整個過程展示策略模式如何用統一介面動態切換不同演算法，維護與擴充更方便，程式也更容易理解與管理。
+!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

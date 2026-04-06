@@ -1,0 +1,521 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./5_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./5_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./5_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./5_files/jquery.scrollbar.min.css">
+
+	<script src="./5_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./5_files/bootstrap.min.js.下載"></script>
+    <script src="./5_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_strategy_5">
+		<input type="hidden" id="problem" name="problem" value="在遊戲設計中，我們希望主角(Player)具有一個移動狀態，能根據不同的狀態執行不同的移動動作，例如，跳躍(Jumper)，行走(Walk)，停止(Stop)。當需要新增更多的移動狀態時，只需新增對應的狀態類別，而不會影響到其他部分的代碼。撰寫報告，討論新設計有何優點?
+
+
+測試程式碼：
+1. IMoveState moveState = new Jumper( );
+   Player player = new Player(moveState);
+   player.move() ; //顯示 I am Jumping!
+   player.setMoveState(new Walk() ) ;
+   player.move() ; //顯示 I am Walking!
+   player.setMoveState(new Stop() ) ;
+   player.move() ; //顯示 I am Stopping!">
+		<input type="hidden" id="src_codes" name="src_codes" value="public class Main {
+  public static void main(String[] args) {
+    	 Player role = new Player(&quot;Jumper&quot;);
+    	 role.move() ;
+	 role.setMoveStrategy(&quot;Walk&quot;);
+         role.move() ;
+         role.setMoveStrategy(&quot;Stop&quot;);
+         role.move() ;
+   }
+}
+
+
+public class Player {
+    String moveStrategy ;
+
+    public Player( String moveStrategy ){
+         this.moveStrategy = moveStrategy ;
+     }
+
+    public void setMoveStrategy(String moveStrategy ){
+         this.moveStrategy = moveStrategy ;
+     }
+
+    public void move() {
+        if (moveStrategy.equals(&quot;Jumper&quot;)) { 
+           System.out.println(&quot;I am Jumping!&quot;);
+        } else if (moveStrategy.equals(&quot;Walk&quot;)) {
+           System.out.println(&quot;I am walking!&quot;);
+        } else if (moveStrategy.equals(&quot;Stop&quot;)) {
+           System.out.println(&quot;I am stopping!&quot;);
+        }
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="interface MoveState {
+    void action();
+}
+
+class Jumper implements MoveState {
+    @Override
+    public void action() {
+        System.out.println(&quot;I am Jumping!&quot;);
+    }
+}
+
+class Walk implements MoveState {
+    @Override
+    public void action() {
+        System.out.println(&quot;I am Walking!&quot;);
+    }
+}
+
+class Stop implements MoveState {
+    @Override
+    public void action() {
+        System.out.println(&quot;I am Stopping!&quot;);
+    }
+}
+
+public class Player {
+    public MoveState moveState;
+
+    public Player(MoveState moveState) {
+        this.moveState = moveState;
+    }
+    public void setMoveState(MoveState moveState) { this.moveState = moveState; }
+    public void move() {
+        moveState.action();
+    }
+    public static void main(String[] args) {
+        Player player = new Player(new Jumper());
+        player.move(); // 顯示 I am Jumping!
+        player.setMoveState(new Walk());
+        player.move(); // 顯示 I am Walking!
+        player.setMoveState(new Stop());
+        player.move(); // 顯示 I am Stopping!
+    }
+}
+
+!@#$報告
+新設計有何優點?
+這份程式使用策略模式來設計角色的移動行為。
+
+我先定義 MoveState 介面，把所有移動行為統一成 action() 方法，接著用 Jumper、Walk、Stop 分別實作跳躍、行走與停止三種不同動作。每個類別只負責自己的行為邏輯，彼此之間互不影響。
+
+在 Player 類別中，並沒有直接寫死移動方式，而是透過建構子或 setMoveState 動態指定目前的移動狀態，呼叫 move() 時再委派給對應的策略執行。這樣可以在執行過程中隨時切換動作，例如從跳躍改為行走或停止。
+
+這種設計的重點在於把「會改變的行為（移動方式）」獨立出來，使 Player 本身只負責控制流程，而不需關心具體動作內容。當未來需要新增新的移動方式時，只需新增一個實作 MoveState 的類別即可，不需要修改既有程式，提升了彈性與可維護性。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生的程式解答正確運用了策略模式來解決題目需求，達到高內聚、低耦合，完全符合物件導向精神。錯誤個數為0。各個狀態以介面及多型方式實作，Player完全不需知道具體狀態類別，未來可直接擴充新行為。
+
+同時，學生的報告內容表達清楚，闡述策略模式將改變的行為獨立，並能於執行時隨時切換，無需更動既有類別，具體點出彈性高、維護性好的設計優點。報告明顯由學生自行撰寫，無明顯AI生成痕跡。
+
+測試程式的結果也能完全覆蓋題目需求，符合預期。
+
+程式正確性：100%。報告完整性與理解：100%。綜合以重量分配計算，總分就是100分。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;目前設計已完全吻合題目需求，無需修改。如欲進一步最佳化：可以考慮將 MoveState 欄位修飾為 private 並提供 getter/setter，且遵守類別命名一致，例如 main 方法可以單獨移出一個 Main 類，符合一檔一類原則。此外在介面名字可採用 IMoveState 或 MoveStrategy 更貼近語境。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>能夠明確描述自身程式設計架構與優點，說明設計目標</li><li>有基礎的任務導向、約束與評價條件說明</li></ul>
+
+					<p>缺點</p>
+					<ul><li>缺少進階認知參與，例如追問、驗證、比較不同方案</li><li>沒有主動反思或質疑自己的設計，未展現策略調整或自我監控</li><li>未與 AI 有積極的互動協作行為，僅呈現單向式說明</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試向 AI 討論設計模式的其他選擇或優缺點，以比較不同方案。</li><li>主動請 AI 提出可能的缺點、改進方向，並根據建議討論設計調整。</li><li>對現有程式碼進行功能驗證、提出測試案例並討論可能會遇到的問題。</li><li>提出疑問，例如這種設計有沒有缺陷、在什麼情況下表現不好，或請 AI 舉反例。</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動大多著重於清楚描述程式設計細節與優點，達到表層的程式碼解釋與優勢分析，缺乏更進階的主動驗證、批判、比較或互動推進，整體互動偏向表層修正型。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>interface MoveState {
+    void action();
+}
+
+class Jumper implements MoveState {
+    @Override
+    public void action() {
+        System.out.println("I am Jumping!");
+    }
+}
+
+class Walk implements MoveState {
+    @Override
+    public void action() {
+        System.out.println("I am Walking!");
+    }
+}
+
+class Stop implements MoveState {
+    @Override
+    public void action() {
+        System.out.println("I am Stopping!");
+    }
+}
+
+public class Player {
+    public MoveState moveState;
+
+    public Player(MoveState moveState) {
+        this.moveState = moveState;
+    }
+    public void setMoveState(MoveState moveState) { this.moveState = moveState; }
+    public void move() {
+        moveState.action();
+    }
+    public static void main(String[] args) {
+        Player player = new Player(new Jumper());
+        player.move(); // 顯示 I am Jumping!
+        player.setMoveState(new Walk());
+        player.move(); // 顯示 I am Walking!
+        player.setMoveState(new Stop());
+        player.move(); // 顯示 I am Stopping!
+    }
+}
+
+!@#$報告
+新設計有何優點?
+這份程式使用策略模式來設計角色的移動行為。
+
+我先定義 MoveState 介面，把所有移動行為統一成 action() 方法，接著用 Jumper、Walk、Stop 分別實作跳躍、行走與停止三種不同動作。每個類別只負責自己的行為邏輯，彼此之間互不影響。
+
+在 Player 類別中，並沒有直接寫死移動方式，而是透過建構子或 setMoveState 動態指定目前的移動狀態，呼叫 move() 時再委派給對應的策略執行。這樣可以在執行過程中隨時切換動作，例如從跳躍改為行走或停止。
+
+這種設計的重點在於把「會改變的行為（移動方式）」獨立出來，使 Player 本身只負責控制流程，而不需關心具體動作內容。當未來需要新增新的移動方式時，只需新增一個實作 MoveState 的類別即可，不需要修改既有程式，提升了彈性與可維護性。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>在遊戲設計中，我們希望主角(Player)具有一個移動狀態，能根據不同的狀態執行不同的移動動作，例如，跳躍(Jumper)，行走(Walk)，停止(Stop)。當需要新增更多的移動狀態時，只需新增對應的狀態類別，而不會影響到其他部分的代碼。撰寫報告，討論新設計有何優點?<br>
+
+測試程式碼：
+</p><pre style="width:500px; height:300px;">1. IMoveState moveState = new Jumper( );
+   Player player = new Player(moveState);
+   player.move() ; //顯示 I am Jumping!
+   player.setMoveState(new Walk() ) ;
+   player.move() ; //顯示 I am Walking!
+   player.setMoveState(new Stop() ) ;
+   player.move() ; //顯示 I am Stopping!
+</pre>
+
+
+
+ <br>
+ <br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class Main {
+  public static void main(String[] args) {
+    	 Player role = new Player("Jumper");
+    	 role.move() ;
+	 role.setMoveStrategy("Walk");
+         role.move() ;
+         role.setMoveStrategy("Stop");
+         role.move() ;
+   }
+}
+
+
+public class Player {
+    String moveStrategy ;
+
+    public Player( String moveStrategy ){
+         this.moveStrategy = moveStrategy ;
+     }
+
+    public void setMoveStrategy(String moveStrategy ){
+         this.moveStrategy = moveStrategy ;
+     }
+
+    public void move() {
+        if (moveStrategy.equals("Jumper")) { 
+           System.out.println("I am Jumping!");
+        } else if (moveStrategy.equals("Walk")) {
+           System.out.println("I am walking!");
+        } else if (moveStrategy.equals("Stop")) {
+           System.out.println("I am stopping!");
+        }
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface MoveState {
+    void action();
+}
+
+class Jumper implements MoveState {
+    @Override
+    public void action() {
+        System.out.println("I am Jumping!");
+    }
+}
+
+class Walk implements MoveState {
+    @Override
+    public void action() {
+        System.out.println("I am Walking!");
+    }
+}
+
+class Stop implements MoveState {
+    @Override
+    public void action() {
+        System.out.println("I am Stopping!");
+    }
+}
+
+public class Player {
+    public MoveState moveState;
+
+    public Player(MoveState moveState) {
+        this.moveState = moveState;
+    }
+    public void setMoveState(MoveState moveState) { this.moveState = moveState; }
+    public void move() {
+        moveState.action();
+    }
+    public static void main(String[] args) {
+        Player player = new Player(new Jumper());
+        player.move(); // 顯示 I am Jumping!
+        player.setMoveState(new Walk());
+        player.move(); // 顯示 I am Walking!
+        player.setMoveState(new Stop());
+        player.move(); // 顯示 I am Stopping!
+    }
+}
+
+!@#$報告
+新設計有何優點?
+這份程式使用策略模式來設計角色的移動行為。
+
+我先定義 MoveState 介面，把所有移動行為統一成 action() 方法，接著用 Jumper、Walk、Stop 分別實作跳躍、行走與停止三種不同動作。每個類別只負責自己的行為邏輯，彼此之間互不影響。
+
+在 Player 類別中，並沒有直接寫死移動方式，而是透過建構子或 setMoveState 動態指定目前的移動狀態，呼叫 move() 時再委派給對應的策略執行。這樣可以在執行過程中隨時切換動作，例如從跳躍改為行走或停止。
+
+這種設計的重點在於把「會改變的行為（移動方式）」獨立出來，使 Player 本身只負責控制流程，而不需關心具體動作內容。當未來需要新增新的移動方式時，只需新增一個實作 MoveState 的類別即可，不需要修改既有程式，提升了彈性與可維護性。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

@@ -1,0 +1,582 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./task_answer_test_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./task_answer_test_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./task_answer_test_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./task_answer_test_files/jquery.scrollbar.min.css">
+
+	<script src="./task_answer_test_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./task_answer_test_files/bootstrap.min.js.下載"></script>
+    <script src="./task_answer_test_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250206_SOLID_EXT_4">
+		<input type="hidden" id="problem" name="problem" value="問題描述：
+
+在一個「支付系統」中，你設計了一個 PaymentProcessor 介面，並在其中定義了多個方法，如 processCreditCardPayment()、processPaypalPayment() 和 processGiftCardPayment()。所有支付方式（如信用卡、PayPal 和禮品卡）都必須實作 PaymentProcessor 介面，儘管某些支付方式並不需要使用所有方法。例如，PayPal 支付不需要 processCreditCardPayment() 方法。請分析這樣的設計，並提出如何改進來遵循介面隔離原則。
+
+
+我們應該將 PaymentProcessor 介面拆分為多個專門的介面，每個介面只包含一種支付方式所需的方法。這樣每個支付方式類別只需要實作它所需要的方法，而不是實作所有支付方式的方法。
+測試範例：
+測試每個支付方式是否正確實作了對應的支付處理方法。
+
+測試程式碼:
+  public class Test { 
+	public void testCreditCardPayment() {
+		PaymentProcessor processor = new CreditCardPaymentProcessor();
+		boolean result = processor.processPayment(&quot;creditCardData&quot;); //顯示信用卡付款: creditCardData，(傳回成功或失敗)
+	}
+
+	public void testPaypalPayment() {
+		PaymentProcessor processor = new PaypalPaymentProcessor();
+		boolean result = processor.processPayment(&quot;paypalData&quot;); //顯示PayPal付款: creditCardData，(傳回成功或失敗)
+	}
+
+	public static void main(String[] args) {
+		Test test = new Test() ;
+		test.testCreditCardPayment();
+		test.testPaypalPayment();
+	}
+}">
+		<input type="hidden" id="src_codes" name="src_codes" value="  public class Test { 
+	public void testCreditCardPayment() {
+		PaymentProcessor processor = new CreditCardPaymentProcessor();
+		boolean result = processor.processPayment(&quot;creditCardData&quot;); //顯示信用卡付款，傳回成功或失敗
+	}
+
+	public void testPaypalPayment() {
+		PaymentProcessor processor = new PaypalPaymentProcessor();
+		boolean result = processor.processPayment(&quot;paypalData&quot;); //顯示PayPal付款，傳回成功或失敗
+	}
+
+	public static void main(String[] args) {
+		Test test = new Test() ;
+		test.testCreditCardPayment();
+		test.testPaypalPayment();
+	}
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="interface CreditCardPayment {
+    boolean payWithCreditCard(String type);
+}
+
+interface PaypalPayment {
+    boolean payWithPaypal(String type);
+}
+
+class CreditCardPaymentProcessor implements CreditCardPayment {
+    @Override
+    public boolean payWithCreditCard(String type) {
+        System.out.print(&quot;信用卡付款 &quot;);
+        return true;
+    }
+}
+
+class PaypalPaymentProcessor implements PaypalPayment {
+
+    @Override
+    public boolean payWithPaypal(String type) {
+        System.out.print(&quot;PayPal付款 &quot;);
+        return true;
+    }
+}
+
+public class Test {
+    public void testCreditCardPayment() {
+        CreditCardPayment processor = new CreditCardPaymentProcessor();
+        boolean result = processor.payWithCreditCard(&quot;creditCardData&quot;); // 顯示信用卡付款，傳回成功或失敗
+        System.out.println(result ? &quot;- 付款成功&quot; : &quot;- 付款失敗&quot;);
+    }
+
+    public void testPaypalPayment() {
+        PaypalPayment processor = new PaypalPaymentProcessor();
+        boolean result = processor.payWithPaypal(&quot;paypalData&quot;); // 顯示PayPal付款，傳回成功或失敗
+        System.out.println(result ? &quot;- 付款成功&quot; : &quot;- 付款失敗&quot;);
+
+    }
+
+    public static void main(String[] args) {
+        Test test = new Test();
+        test.testCreditCardPayment();
+        test.testPaypalPayment();
+    }
+}
+!@#$報告
+這種寫法的重點在於把功能拆得比較細，讓每個類別只需要面對自己真的會用到的那一部分。像這裡信用卡跟 PayPal 被分成兩個不同的介面，各自的實作類別也只負責自己的事情，不會出現一個類別裡面放了一堆其實用不到的方法。
+
+這樣做的實際差別在於，如果把所有付款方式硬塞在同一個介面裡，某些類別就會被迫實作不屬於自己的功能，最後不是寫空方法，就是寫一些沒有意義的處理，久了程式會變得混亂。現在這種拆開的方式，類別的責任會比較單純，看程式時也比較容易理解。
+
+另外一個影響是在修改時比較安全。假設之後 PayPal 的流程要調整，只會動到 PayPal 那一塊，不會牽連到信用卡的程式。因為兩者本來就是分開的，所以不太會出現改一個地方結果壞掉另一個地方的情況。
+
+簡單講，這種設計不是為了統一操作，而是刻意讓東西分開，避免類別依賴到不需要的功能，讓結構維持在比較乾淨、好改的狀態。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生程式正確地遵循了介面隔離原則（ISP），將原本 PaymentProcessor 的大介面切分為 CreditCardPayment 與 PaypalPayment 兩個專精介面，避免不同的支付方式被迫實作多餘、不必要的方法。程式設計清楚正確，CreditCardPaymentProcessor 及 PaypalPaymentProcessor 都只實作自己職責範圍的介面，且測試程式也做了正確驗證。\n\n錯誤個數：0\n\n報告部分也以清晰易懂的方式解釋了分介面的好處，內容為自行書寫，符合物件導向精神，沒有明顯抄襲跡象。\n\n程式整體邏輯與題意皆符合，唯一比較可惜是命名上 payWithCreditCard、payWithPaypal 等名稱，可以直接簡化為 processPayment，以凸顯這些介面本質一致、只是參數性質不一樣（但這屬於命名最佳化選項，並不影響實作正確性）。\n\n總結：本題架構正確、原則遵循，無明顯錯誤。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 介面方法命名可統一：可以將 payWithCreditCard、payWithPaypal 分別改為 processPayment，代表這個介面即是該支付方式的 payment；未來如果還有更多支付方式，還可以用同樣的方式擴充。\n2. 若需加入禮品卡支付，只要再新增一個 GiftCardPayment 介面及其實作類別即可。\n3. 因為介面與測試程式一致，日後再擴充時建議多一層多型性的抽象化設計，例如考慮支付方式介面可以讓 client code 更具彈性。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">2.67</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">共同建構 (co-constructive)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>學生多次主動發問、質疑、驗證AI/主流理論並要求舉例、理由和時機區分，展現高度自主與批判性。</li><li>能將設計原則應用於實作並自我報告、對照，具備良好反思與彙整能力。</li><li>過程中數次依AI回饋主動重構程式並調整思考策略，展現監控與修正能力。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>部分提問仍侷限於技術方案表層確認，較少系統性實驗與多方案深度比較。</li><li>缺乏明顯的主動驗證與測試AI答案是否正確（TC），未見設計自動化測試或驗證步驟。</li><li>少數回合反射式請求回饋但未提出自身觀點或進一步自問自答。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>可以更頻繁將AI提供的解法實際運行、測試，並回饋發現的bug或不足，加強信任校準（TC）。</li><li>嘗試將ISP與策略模式同時應用於一個完整範例，由自己主導做多方案比較實驗與報告。</li><li>每次詢問AI解答後，主動指出你對其正確性、適用性的疑問或矛盾，或主動提自認為最佳的選用依據，深化CE/EQ。</li><li>進階可主動畫UML並請AI批改，再用文字解釋選擇設計的依據，增強對結構設計的可傳遞性。</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動學生明顯展現高度反思與自我檢查能力，屢次質疑並要求原則舉例與原理判準，將AI引導至進一步解釋、類比和案例驗證，有共同建構認知的互動特徵。惟驗證測試與結果導向問題尚可強化，更深層策略比較亦有提升空間。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>把策略模式的架構寫出來</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>我只問策略模式適用class去操作介面?</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface PaymentProcessorStrategy {...}那個result感覺沒啥用藥怎改才會讓那個boolean有點用處</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>不是說不應該有if else</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface PaymentProcessorStrategy {...}好不好</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface PaymentProcessorStrategy {...}!@#$報告
+新設計有何優點?
+
+這段設計其實是在把...!@#$
+</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>所以這不是策略模式而是介面隔離原則?要設置一堆介面?</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>1. 題目強調要針對每種支付方式設計「專門的介面」，...我藥用啥架構</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>所以當我有一堆方法到底是要開介面來是要用策略模式</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>這題感覺符合策略模式使用條件為啥不是用他</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>所以我該咋做畫uml</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface PaymentProcessorStrategy {...}!@#$報告
+新設計有何優點? ...!@#$</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>精要的整理何時用ISP何時用策略</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>所以這題為啥要用isp</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>所以我用策略模式這樣就不用實作不必要的東西不是?</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>舉一個我會有問題的可能</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>所以策略模式是要確定各都有一致的方法</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>我現在要怎改</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface CreditCardPayment {...}這樣好不好</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface CreditCardPayment {...}（加入測試維護與結果輸出）</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>策略模式他不給用啊</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface CreditCardPayment {...} !@#$報告
+這種寫法的重點在於把功能拆得比較細，...!@#$</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align: left"> <p>問題描述：<br>
+在一個「支付系統」中，你設計了一個 PaymentProcessor 介面，並在其中定義了多個方法，如 processCreditCardPayment()、processPaypalPayment() 和 processGiftCardPayment()。所有支付方式（如信用卡、PayPal 和禮品卡）都必須實作 PaymentProcessor 介面，儘管某些支付方式並不需要使用所有方法。例如，PayPal 支付不需要 processCreditCardPayment() 方法。請分析這樣的設計，並提出如何改進來遵循介面隔離原則。
+</p>
+<p>
+我們應該將 PaymentProcessor 介面拆分為多個專門的介面，每個介面只包含一種支付方式所需的方法。這樣每個支付方式類別只需要實作它所需要的方法，而不是實作所有支付方式的方法。
+測試範例：
+測試每個支付方式是否正確實作了對應的支付處理方法。
+</p>
+測試程式碼:
+<pre>  public class Test { 
+	public void testCreditCardPayment() {
+		PaymentProcessor processor = new CreditCardPaymentProcessor();
+		boolean result = processor.processPayment("creditCardData"); //顯示信用卡付款: creditCardData，(傳回成功或失敗)
+	}
+
+	public void testPaypalPayment() {
+		PaymentProcessor processor = new PaypalPaymentProcessor();
+		boolean result = processor.processPayment("paypalData"); //顯示PayPal付款: creditCardData，(傳回成功或失敗)
+	}
+
+	public static void main(String[] args) {
+		Test test = new Test() ;
+		test.testCreditCardPayment();
+		test.testPaypalPayment();
+	}
+}
+</pre>
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">  public class Test { 
+	public void testCreditCardPayment() {
+		PaymentProcessor processor = new CreditCardPaymentProcessor();
+		boolean result = processor.processPayment("creditCardData"); //顯示信用卡付款，傳回成功或失敗
+	}
+
+	public void testPaypalPayment() {
+		PaymentProcessor processor = new PaypalPaymentProcessor();
+		boolean result = processor.processPayment("paypalData"); //顯示PayPal付款，傳回成功或失敗
+	}
+
+	public static void main(String[] args) {
+		Test test = new Test() ;
+		test.testCreditCardPayment();
+		test.testPaypalPayment();
+	}
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface CreditCardPayment {
+    boolean payWithCreditCard(String type);
+}
+
+interface PaypalPayment {
+    boolean payWithPaypal(String type);
+}
+
+class CreditCardPaymentProcessor implements CreditCardPayment {
+    @Override
+    public boolean payWithCreditCard(String type) {
+        System.out.print("信用卡付款 ");
+        return true;
+    }
+}
+
+class PaypalPaymentProcessor implements PaypalPayment {
+
+    @Override
+    public boolean payWithPaypal(String type) {
+        System.out.print("PayPal付款 ");
+        return true;
+    }
+}
+
+public class Test {
+    public void testCreditCardPayment() {
+        CreditCardPayment processor = new CreditCardPaymentProcessor();
+        boolean result = processor.payWithCreditCard("creditCardData"); // 顯示信用卡付款，傳回成功或失敗
+        System.out.println(result ? "- 付款成功" : "- 付款失敗");
+    }
+
+    public void testPaypalPayment() {
+        PaypalPayment processor = new PaypalPaymentProcessor();
+        boolean result = processor.payWithPaypal("paypalData"); // 顯示PayPal付款，傳回成功或失敗
+        System.out.println(result ? "- 付款成功" : "- 付款失敗");
+
+    }
+
+    public static void main(String[] args) {
+        Test test = new Test();
+        test.testCreditCardPayment();
+        test.testPaypalPayment();
+    }
+}
+!@#$報告
+這種寫法的重點在於把功能拆得比較細，讓每個類別只需要面對自己真的會用到的那一部分。像這裡信用卡跟 PayPal 被分成兩個不同的介面，各自的實作類別也只負責自己的事情，不會出現一個類別裡面放了一堆其實用不到的方法。
+
+這樣做的實際差別在於，如果把所有付款方式硬塞在同一個介面裡，某些類別就會被迫實作不屬於自己的功能，最後不是寫空方法，就是寫一些沒有意義的處理，久了程式會變得混亂。現在這種拆開的方式，類別的責任會比較單純，看程式時也比較容易理解。
+
+另外一個影響是在修改時比較安全。假設之後 PayPal 的流程要調整，只會動到 PayPal 那一塊，不會牽連到信用卡的程式。因為兩者本來就是分開的，所以不太會出現改一個地方結果壞掉另一個地方的情況。
+
+簡單講，這種設計不是為了統一操作，而是刻意讓東西分開，避免類別依賴到不需要的功能，讓結構維持在比較乾淨、好改的狀態。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
