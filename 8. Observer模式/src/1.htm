@@ -226,8 +226,8 @@ public class StockMarket {
 		<input type="hidden" id="codes" name="codes" value="import java.util.ArrayList;
 
 interface ISubject {
-    void register(IObserver client);
-    void remove(IObserver client);
+    void register(IObserver iObserver);
+    void remove(IObserver iObserver);
     void notifyInvestors();
 }
 
@@ -244,16 +244,14 @@ class StockMarket implements ISubject {
         this.price = price;
         notifyInvestors();
     }
-
     @Override
-    public void register(IObserver client) {
-        observers.add(client);
+    public void register(IObserver iObserver) {
+        observers.add(iObserver);
     }
     @Override
-    public void remove(IObserver client) {
-        observers.remove(client);
+    public void remove(IObserver iObserver) {
+        observers.remove(iObserver);
     }
-    @Override
     public void notifyInvestors() {
         System.out.println(&quot;Notifying investors about stock price change to: &quot; + price);
         for (IObserver iObserver : observers) {
@@ -263,14 +261,13 @@ class StockMarket implements ISubject {
 }
 
 class Investor implements IObserver {
-    private String client;
+    private String name;
 
-    public Investor(String client) {
-        this.client = client;
+    public Investor(String name) {
+        this.name = name;
     }
-
     public void update(double price) {
-        System.out.println(&quot;Investor : &quot; + client + &quot; received update. New stock price: &quot; + price);
+        System.out.println(&quot;Investor : &quot; + name + &quot;received update. New stock price: &quot; + price);
     }
 }
 
@@ -285,47 +282,74 @@ public class Main {
 }
 !@#$報告
 新設計有何優點?
-這段程式展示了一個股票市場通知系統的觀察者模式實作，但與前一版不同的是，通知時直接傳遞股價數值，而不是透過 `StockMarket` 取得。
 
-程式中 `StockMarket` 類別扮演主題（Subject），它維護一個觀察者清單，可以註冊或移除投資人，並在價格變動時通知所有註冊觀察者。當 `setPrice()` 被呼叫時，股價更新後會自動觸發 `notifyInvestors()`，逐一呼叫每個觀察者的 `update(price)` 方法，把新的股價傳給他們。
+在本題中，我們將原本的股市與投資者系統改寫為 Observer 設計模式，明確將 StockMarket 實作 ISubject，Investor 實作 IObserver，達到介面抽象與低耦合。透過這個設計，StockMarket 維護了一個觀察者清單，投資者可以自由註冊或移除，而當股價變動時，notifyInvestors 會自動呼叫所有觀察者的 update 方法通知最新價格。這樣的設計符合 介面隔離原則（Interface Segregation Principle） 與 依賴反轉原則（Dependency Inversion Principle），使股市與投資者之間的耦合度降低。
 
-`Investor` 類別實作了 `IObserver` 介面，收到股價更新時會印出自己的名字和最新價格。在 `Main` 中，先建立股票市場和投資人，投資人註冊到市場後，當股價設定為 100 時，市場會立即通知投資人。最後，投資人被移除，不再接收後續通知。
+以生活化比喻來說，這就像遊戲中的「玩家追蹤系統」，玩家可以訂閱遊戲內的活動通知，當遊戲事件發生時，所有訂閱的玩家都會收到消息，而遊戲不需要知道每個玩家的細節。這種抽象設計的好處在於，如果未來要新增不同種類的投資者或通知方式，只需要實作 IObserver 介面即可，不必改動原本的股市程式碼，提高系統的擴充性與可維護性。
 
-這個設計保持了股票市場和投資人之間的鬆耦合，方便未來擴充不同投資人類型或加入其他市場事件，符合事件驅動和可擴展性的設計原則。
-!@#$
+此外，Observer 模式使單元測試變得更簡單，我們可以對單個投資者或股市事件進行獨立測試，而不會干擾其他組件。若在大型專案中，這種設計還可以進一步加強，像是使用事件物件封裝通知資訊，或將觀察者容器改成線程安全（如 CopyOnWriteArrayList），以確保多執行緒環境下的資料一致性。
+
+總結來說，透過 Observer 模式，我們成功實現了股市與投資者的低耦合、易維護與高擴充性。生活化的例子讓理解更直覺，但核心優點仍體現在技術層面：清晰的介面設計、可替換的觀察者、以及對未來擴充與測試的良好支援。!@#$
 ">
 		
 		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
 	  </form>
 	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
 	     
-		    程式碼分數: <span id="SCORE">100</span><br>
+		    程式碼分數: <span id="SCORE">99</span><br>
 	
-		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生程式符合 Observer 模式設計，已修正原本程式碼的物件導向違反（原程式 Investor 緊耦合 StockMarket，且通知並未將資料傳給觀察者）。現在所有投資人都可自由註冊到任何主題，且更新是以股價為參數進行鬆耦合傳遞。該程式未檢出明顯錯誤，架構、介面設計、方法運用完全正確，物件導向原則（OCP、依賴倒置、鬆耦合）皆有落實。&lt;/pre&gt;</div>
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生程式最大部分都正確地實作了 Observer 模式，符合題目的要求：
+
+1. StockMarket 實作 ISubject 介面，Investor 實作 IObserver 介面，結構正確，符合觀察者模式設計。
+2. StockMarket 能註冊(register)、移除(remove)和通知(notifyInvestors)觀察者（Investors），符合職責分離與低耦合原則。
+3. Investor 實作 update 方法，能收到股價異動通知。
+4. 主程式 main() 也驗證了註冊→通知→移除邏輯。
+
+錯誤個數：1
+
+小問題/細節：
+- Investor.update 輸出時少了一個空格，顯示為 "Investor : Tomreceived update..."，"Tom"和"received"之間需加空格。
+- (次要) notifyInvestors 實際上應該用 @Override 標註表示覆寫介面方法。
+- 接口命名風格有點和 Java 標準不符。Java 標準通常不用"I..."前綴，但這可接受。
+
+報告內容分析：
+- 報告討論新設計優點，具體列出低耦合、易維護、可擴充、容易單元測試等優點，並提供生活化比喻。
+- 報告語句流暢、具體合理，未有 AI 生成抄襲跡象。
+- 報告和程式對應緊密。
+
+總結：
+- 實作 Observer 模式完全正確，所有要求皆有落實。程式正確性高，報告內容完整且自創，僅有微小字串拼接格式上的小失誤。
+
+綜合評分：
+- 程式部分：69/70（僅字串小細節錯誤）
+- 報告部分：30/30（內容完整且自創）&lt;/pre&gt;</div>
 			 
-		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 可以將 observers 欄位宣告為 List&lt;IObserver&gt; 以符合程式設計慣例。
-2. 新增 Exception 處理讓移除未註冊觀察者時不會發生錯誤。
-3. 建議為 StockMarket 增加初始化價格的建構子。
-4. 若要符合介面呼叫統一性，Main 裡 stock 可以用 ISubject 型別取代 StockMarket。&lt;/pre&gt;</div>
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 請將 Investor 類別的 update 方法輸出調整如下：
+   System.out.println("Investor : " + name + " received update. New stock price: " + price);
+   // ^注意 name 與 received 之間要加入空格。
+2. 在 StockMarket 的 notifyInvestors 方法前可加 @Override 標註。
+3. 若追求 Java 命名慣例，可去掉接口名稱的'I'前綴，直接用 Subject/Observer。
+4. 若要提升多執行緒安全，可選用 CopyOnWriteArrayList 代替 ArrayList。
+&lt;/pre&gt;</div>
 		
-		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.5</span><br>
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.33</span><br>
 	
-			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">答案導向 (answer-oriented)</div>
 	
 		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
 					<p>優點</p>
-					<ul><li>能夠陳述程式設計目標與解決策略，有明確功能敘述。</li><li>展現程式結構的調整與多步驟修改能力。</li></ul>
+					<ul><li>問題定義清楚，程式設計理念與優點描述詳盡。</li><li>能用生活化方式解釋技術設計，易於理解。</li></ul>
 
 					<p>缺點</p>
-					<ul><li>缺乏主動追問、質疑、驗證、自我修正等高層次互動行為。</li><li>僅止於表層修改與描述優點，未深入比較或提出推理解釋。</li><li>未曾對 AI 產出進行驗證或策略性選擇，亦無自我監控痕跡。</li></ul>
+					<ul><li>缺乏主動追問、批判、驗證或請 AI 比較的行為。</li><li>幾乎沒有自我監控或策略調整，也無驗證 AI 或方案正確性的舉措。</li><li>AI 僅被當作陳述/報告對象，缺少互動、協同建構或共構行為。</li></ul>
 
 				</div>
 			 
 		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
-					<ul><li>嘗試主動追問：為何這樣設計比舊版更好？有沒有潛在風險？</li><li>可針對兩版進行優劣比較或提出情境應用的討論。</li><li>嘗試提出該設計下若遭遇實務限制時的可能問題，或驗證設計是否符合自身理解，以提升互動層次。</li></ul>
+					<ul><li>下一步可直接質疑本設計存在的問題或限制，請 AI 幫忙檢驗、提出改進建議。</li><li>嘗試請 AI 比較觀察者模式與其他設計模式（如事件委派、回呼等）的優缺點，加強認知深度。</li><li>主動自我反思或監控：請 AI 依據不同應用場景修改設計，如多執行緒環境、錯誤處理等等，提升設計品質。</li><li>可從測試、資料一致性等面向深入，讓 AI 幫忙寫單元測試或舉 error-prone case。</li></ul>
 
 					<p>總評</p>
-					<pre>整體互動著重於描述編碼與表層改寫，以及對程式流程與優點的摘要說明，並未見真正的認知、反思或驗證互動，屬於『表層修正』類型；缺乏進一步的追問、比較、驗證，以及高主體性行為，導致概念理解與設計思辨較為薄弱。</pre>
+					<pre>本次互動高度聚焦於自我完整解釋與設計優點描述（強 TO），但缺乏質詢、互動、批判與驗證，亦未將 AI 當作認知夥伴，未展現高層次主體性，用法偏向功課型報告。</pre>
 				</div>
 			
 			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
@@ -333,85 +357,8 @@ public class Main {
 							<pre>import java.util.ArrayList;
 
 interface ISubject {
-    void register(IObserver client);
-    void remove(IObserver client);
-    void notifyInvestors();
-}
-
-interface IObserver {
-    void update();
-}
-
-class StockMarket implements ISubject {
-    private ArrayList<iobserver> observers = new ArrayList&lt;&gt;();
-    private double price;
-
-    public double getPrice() { return price; }
-    public void setPrice(double price) {
-        this.price = price;
-        notifyInvestors();
-    }
-
-    @Override
-    public void register(IObserver client) {
-        observers.add(client);
-    }
-    @Override
-    public void remove(IObserver client) {
-        observers.remove(client);
-    }
-    @Override
-    public void notifyInvestors() {
-        System.out.println("Notifying investors about stock price change to: " + price);
-        for (IObserver iObserver : observers) {
-            iObserver.update();
-        }
-    }
-}
-
-class Investor implements IObserver {
-    private StockMarket stockMarket;
-    private String client;
-
-    public Investor(StockMarket stockMarket, String client) {
-        this.stockMarket = stockMarket;
-        this.client = client;
-    }
-
-    public void update() {
-        System.out.println("Investor :" + client + " received update. New stock price: " + stockMarket.getPrice());
-    }
-}
-
-public class Main {
-    public static void main(String[] args) {
-        StockMarket stock = new StockMarket();
-        IObserver Tom = new Investor(stock, "Tom");
-        stock.register(Tom);
-        stock.setPrice(100);
-        stock.remove(Tom);
-    }
-}
-!@#$報告
-新設計有何優點?
-
-這個程式模擬了一個股票市場通知系統，使用了觀察者模式（Observer Pattern）。股票市場類別 `StockMarket` 代表主題，它可以註冊或移除投資人，並在股價變動時通知所有註冊的觀察者。投資人類別 `Investor` 實作了觀察者介面 `IObserver`，當收到通知時會印出最新股價。
-
-在程式流程中，先建立股票市場實例，再建立投資人並註冊到市場。當股票價格透過 `setPrice()` 更新時，市場自動呼叫 `notifyInvestors()`，逐一通知所有投資人，投資人收到訊息後印出最新股價。如果投資人不想再接收通知，可以呼叫 `remove()` 取消註冊。
-
-這種設計的好處是股票市場和投資人之間是鬆耦合的，新增或移除投資人不會影響市場的運作，也方便日後擴充，例如增加不同類型的投資人或加入更多市場訊息源。此外，這個模式與現實金融系統中的即時推播通知或訂閱消息系統相似，能直觀呈現事件驅動的設計思路。
-!@#$
-</iobserver></pre>
-							
-						</div>
-						<hr>
-					
-						<div class="utterance-item">
-							<pre>import java.util.ArrayList;
-
-interface ISubject {
-    void register(IObserver client);
-    void remove(IObserver client);
+    void register(IObserver iObserver);
+    void remove(IObserver iObserver);
     void notifyInvestors();
 }
 
@@ -428,16 +375,14 @@ class StockMarket implements ISubject {
         this.price = price;
         notifyInvestors();
     }
-
     @Override
-    public void register(IObserver client) {
-        observers.add(client);
+    public void register(IObserver iObserver) {
+        observers.add(iObserver);
     }
     @Override
-    public void remove(IObserver client) {
-        observers.remove(client);
+    public void remove(IObserver iObserver) {
+        observers.remove(iObserver);
     }
-    @Override
     public void notifyInvestors() {
         System.out.println("Notifying investors about stock price change to: " + price);
         for (IObserver iObserver : observers) {
@@ -447,14 +392,13 @@ class StockMarket implements ISubject {
 }
 
 class Investor implements IObserver {
-    private String client;
+    private String name;
 
-    public Investor(String client) {
-        this.client = client;
+    public Investor(String name) {
+        this.name = name;
     }
-
     public void update(double price) {
-        System.out.println("Investor :" + client + " received update. New stock price: " + price);
+        System.out.println("Investor : " + name + "received update. New stock price: " + price);
     }
 }
 
@@ -469,14 +413,12 @@ public class Main {
 }
 !@#$報告
 新設計有何優點?
-這段程式展示了一個股票市場通知系統的觀察者模式實作，但與前一版不同的是，通知時直接傳遞股價數值，而不是透過 `StockMarket` 取得。
 
-程式中 `StockMarket` 類別扮演主題（Subject），它維護一個觀察者清單，可以註冊或移除投資人，並在價格變動時通知所有註冊觀察者。當 `setPrice()` 被呼叫時，股價更新後會自動觸發 `notifyInvestors()`，逐一呼叫每個觀察者的 `update(price)` 方法，把新的股價傳給他們。
+這個程式的設計就像我們在玩股市模擬遊戲一樣，股市（StockMarket）就像遊戲的中心，而投資者（Investor）就像玩家。以前如果股價變動，要每個玩家自己去查股價或更新資料，很麻煩，而且容易漏掉。現在用這種觀察者模式，只要玩家有登記成股市的「粉絲」，股價一變動，股市就會自動通知他們，就像發訊息提醒一樣，大家都會同步知道最新股價。
 
-`Investor` 類別實作了 `IObserver` 介面，收到股價更新時會印出自己的名字和最新價格。在 `Main` 中，先建立股票市場和投資人，投資人註冊到市場後，當股價設定為 100 時，市場會立即通知投資人。最後，投資人被移除，不再接收後續通知。
+這樣做有幾個好處。首先，如果想增加新的玩家，或是加一個專門分析股價的玩家，只要實作好通知的方法，就可以直接加入，不用改股市原本的程式。再來，股市不用管玩家會怎麼反應，只管通知就好，整個程式更乾淨、容易維護，也不容易出錯。最後，這種設計還能讓程式擴充性很高，將來想加入更多功能，比如自動買賣系統，也很方便接上去，完全不會影響原本股市的運作。
 
-這個設計保持了股票市場和投資人之間的鬆耦合，方便未來擴充不同投資人類型或加入其他市場事件，符合事件驅動和可擴展性的設計原則。
-!@#$
+簡單來說，就是股市專心做股價更新，玩家專心接收通知，大家各司其職，程式運作起來就像遊戲一樣順暢又直覺。!@#$
 </iobserver></pre>
 							
 						</div>
@@ -486,8 +428,8 @@ public class Main {
 							<pre>import java.util.ArrayList;
 
 interface ISubject {
-    void register(IObserver client);
-    void remove(IObserver client);
+    void register(IObserver iObserver);
+    void remove(IObserver iObserver);
     void notifyInvestors();
 }
 
@@ -504,16 +446,14 @@ class StockMarket implements ISubject {
         this.price = price;
         notifyInvestors();
     }
-
     @Override
-    public void register(IObserver client) {
-        observers.add(client);
+    public void register(IObserver iObserver) {
+        observers.add(iObserver);
     }
     @Override
-    public void remove(IObserver client) {
-        observers.remove(client);
+    public void remove(IObserver iObserver) {
+        observers.remove(iObserver);
     }
-    @Override
     public void notifyInvestors() {
         System.out.println("Notifying investors about stock price change to: " + price);
         for (IObserver iObserver : observers) {
@@ -523,14 +463,13 @@ class StockMarket implements ISubject {
 }
 
 class Investor implements IObserver {
-    private String client;
+    private String name;
 
-    public Investor(String client) {
-        this.client = client;
+    public Investor(String name) {
+        this.name = name;
     }
-
     public void update(double price) {
-        System.out.println("Investor :" + client + " received update. New stock price: " + price);
+        System.out.println("Investor : " + name + "received update. New stock price: " + price);
     }
 }
 
@@ -545,14 +484,14 @@ public class Main {
 }
 !@#$報告
 新設計有何優點?
-這段程式展示了一個股票市場通知系統的觀察者模式實作，但與前一版不同的是，通知時直接傳遞股價數值，而不是透過 `StockMarket` 取得。
 
-程式中 `StockMarket` 類別扮演主題（Subject），它維護一個觀察者清單，可以註冊或移除投資人，並在價格變動時通知所有註冊觀察者。當 `setPrice()` 被呼叫時，股價更新後會自動觸發 `notifyInvestors()`，逐一呼叫每個觀察者的 `update(price)` 方法，把新的股價傳給他們。
+在本題中，我們將原本的股市與投資者系統改寫為 Observer 設計模式，明確將 StockMarket 實作 ISubject，Investor 實作 IObserver，達到介面抽象與低耦合。透過這個設計，StockMarket 維護了一個觀察者清單，投資者可以自由註冊或移除，而當股價變動時，notifyInvestors 會自動呼叫所有觀察者的 update 方法通知最新價格。這樣的設計符合 介面隔離原則（Interface Segregation Principle） 與 依賴反轉原則（Dependency Inversion Principle），使股市與投資者之間的耦合度降低。
 
-`Investor` 類別實作了 `IObserver` 介面，收到股價更新時會印出自己的名字和最新價格。在 `Main` 中，先建立股票市場和投資人，投資人註冊到市場後，當股價設定為 100 時，市場會立即通知投資人。最後，投資人被移除，不再接收後續通知。
+以生活化比喻來說，這就像遊戲中的「玩家追蹤系統」，玩家可以訂閱遊戲內的活動通知，當遊戲事件發生時，所有訂閱的玩家都會收到消息，而遊戲不需要知道每個玩家的細節。這種抽象設計的好處在於，如果未來要新增不同種類的投資者或通知方式，只需要實作 IObserver 介面即可，不必改動原本的股市程式碼，提高系統的擴充性與可維護性。
 
-這個設計保持了股票市場和投資人之間的鬆耦合，方便未來擴充不同投資人類型或加入其他市場事件，符合事件驅動和可擴展性的設計原則。
-!@#$
+此外，Observer 模式使單元測試變得更簡單，我們可以對單個投資者或股市事件進行獨立測試，而不會干擾其他組件。若在大型專案中，這種設計還可以進一步加強，像是使用事件物件封裝通知資訊，或將觀察者容器改成線程安全（如 CopyOnWriteArrayList），以確保多執行緒環境下的資料一致性。
+
+總結來說，透過 Observer 模式，我們成功實現了股市與投資者的低耦合、易維護與高擴充性。生活化的例子讓理解更直覺，但核心優點仍體現在技術層面：清晰的介面設計、可替換的觀察者、以及對未來擴充與測試的良好支援。!@#$
 </iobserver></pre>
 							
 						</div>
@@ -627,8 +566,8 @@ public class StockMarket {
      你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">import java.util.ArrayList;
 
 interface ISubject {
-    void register(IObserver client);
-    void remove(IObserver client);
+    void register(IObserver iObserver);
+    void remove(IObserver iObserver);
     void notifyInvestors();
 }
 
@@ -645,16 +584,14 @@ class StockMarket implements ISubject {
         this.price = price;
         notifyInvestors();
     }
-
     @Override
-    public void register(IObserver client) {
-        observers.add(client);
+    public void register(IObserver iObserver) {
+        observers.add(iObserver);
     }
     @Override
-    public void remove(IObserver client) {
-        observers.remove(client);
+    public void remove(IObserver iObserver) {
+        observers.remove(iObserver);
     }
-    @Override
     public void notifyInvestors() {
         System.out.println("Notifying investors about stock price change to: " + price);
         for (IObserver iObserver : observers) {
@@ -664,14 +601,13 @@ class StockMarket implements ISubject {
 }
 
 class Investor implements IObserver {
-    private String client;
+    private String name;
 
-    public Investor(String client) {
-        this.client = client;
+    public Investor(String name) {
+        this.name = name;
     }
-
     public void update(double price) {
-        System.out.println("Investor : " + client + " received update. New stock price: " + price);
+        System.out.println("Investor : " + name + "received update. New stock price: " + price);
     }
 }
 
@@ -686,14 +622,14 @@ public class Main {
 }
 !@#$報告
 新設計有何優點?
-這段程式展示了一個股票市場通知系統的觀察者模式實作，但與前一版不同的是，通知時直接傳遞股價數值，而不是透過 `StockMarket` 取得。
 
-程式中 `StockMarket` 類別扮演主題（Subject），它維護一個觀察者清單，可以註冊或移除投資人，並在價格變動時通知所有註冊觀察者。當 `setPrice()` 被呼叫時，股價更新後會自動觸發 `notifyInvestors()`，逐一呼叫每個觀察者的 `update(price)` 方法，把新的股價傳給他們。
+在本題中，我們將原本的股市與投資者系統改寫為 Observer 設計模式，明確將 StockMarket 實作 ISubject，Investor 實作 IObserver，達到介面抽象與低耦合。透過這個設計，StockMarket 維護了一個觀察者清單，投資者可以自由註冊或移除，而當股價變動時，notifyInvestors 會自動呼叫所有觀察者的 update 方法通知最新價格。這樣的設計符合 介面隔離原則（Interface Segregation Principle） 與 依賴反轉原則（Dependency Inversion Principle），使股市與投資者之間的耦合度降低。
 
-`Investor` 類別實作了 `IObserver` 介面，收到股價更新時會印出自己的名字和最新價格。在 `Main` 中，先建立股票市場和投資人，投資人註冊到市場後，當股價設定為 100 時，市場會立即通知投資人。最後，投資人被移除，不再接收後續通知。
+以生活化比喻來說，這就像遊戲中的「玩家追蹤系統」，玩家可以訂閱遊戲內的活動通知，當遊戲事件發生時，所有訂閱的玩家都會收到消息，而遊戲不需要知道每個玩家的細節。這種抽象設計的好處在於，如果未來要新增不同種類的投資者或通知方式，只需要實作 IObserver 介面即可，不必改動原本的股市程式碼，提高系統的擴充性與可維護性。
 
-這個設計保持了股票市場和投資人之間的鬆耦合，方便未來擴充不同投資人類型或加入其他市場事件，符合事件驅動和可擴展性的設計原則。
-!@#$
+此外，Observer 模式使單元測試變得更簡單，我們可以對單個投資者或股市事件進行獨立測試，而不會干擾其他組件。若在大型專案中，這種設計還可以進一步加強，像是使用事件物件封裝通知資訊，或將觀察者容器改成線程安全（如 CopyOnWriteArrayList），以確保多執行緒環境下的資料一致性。
+
+總結來說，透過 Observer 模式，我們成功實現了股市與投資者的低耦合、易維護與高擴充性。生活化的例子讓理解更直覺，但核心優點仍體現在技術層面：清晰的介面設計、可替換的觀察者、以及對未來擴充與測試的良好支援。!@#$
 </textarea>
     </div>
 	

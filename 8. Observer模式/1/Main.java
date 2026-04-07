@@ -1,7 +1,38 @@
-import java.util.*;
+import java.util.ArrayList;
+
+interface ISubject {
+    void register(IObserver iObserver);
+    void remove(IObserver iObserver);
+    void notifyInvestors();
+}
 
 interface IObserver {
     void update(double price);
+}
+
+class StockMarket implements ISubject {
+    private ArrayList<IObserver> observers = new ArrayList<>();
+    private double price;
+
+    public double getPrice() { return price; }
+    public void setPrice(double price) {
+        this.price = price;
+        notifyInvestors();
+    }
+    @Override
+    public void register(IObserver iObserver) {
+        observers.add(iObserver);
+    }
+    @Override
+    public void remove(IObserver iObserver) {
+        observers.remove(iObserver);
+    }
+    public void notifyInvestors() {
+        System.out.println("Notifying investors about stock price change to: " + price);
+        for (IObserver iObserver : observers) {
+            iObserver.update(price);
+        }
+    }
 }
 
 class Investor implements IObserver {
@@ -10,39 +41,15 @@ class Investor implements IObserver {
     public Investor(String name) {
         this.name = name;
     }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    @Override
     public void update(double price) {
-        System.out.println("Investor received update. New stock price: " + price);
-    }
-}
-
-class StockMarket {
-    private ArrayList<IObserver> observers = new ArrayList<>();
-    private double price;
-
-    void register(IObserver observer) {
-        observers.add(observer);
-    }
-    void remove(IObserver observer) {
-        observers.remove(observer);
-    }
-    public void setPrice(double price) {
-        this.price = price;
-        notifyInvestors();
-    }
-    public void notifyInvestors() {
-        for (IObserver o : observers) {
-            o.update(price);
-        }
+        System.out.println("Investor : " + name + " received update. New stock price: " + price);
     }
 }
 
 public class Main {
     public static void main(String[] args) {
         StockMarket stock = new StockMarket();
-        Investor Tom = new Investor("Tom");
+        IObserver Tom = new Investor("Tom");
         stock.register(Tom);
         stock.setPrice(100);
         stock.remove(Tom);
