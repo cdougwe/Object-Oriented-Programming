@@ -7,5 +7,13 @@
     },
 
     "jdk.telemetry.enabled": true,
-    "jdk.runConfig.vmOptions": "--enable-preview --source 25"
+    "jdk.runConfig.vmOptions": "--enable-preview --source 25",
+    "files.exclude": {
+        "**/*.class": true,
+        "**/desktop.ini": true,
+        "**/*.ico": true,
+        "**/.git": true,
+        "**/*.ctxt": true,
+        "**/*.bluej": true
+    }
 }
