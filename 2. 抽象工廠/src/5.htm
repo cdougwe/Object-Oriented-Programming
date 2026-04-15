@@ -1,0 +1,734 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./5_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./5_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./5_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./5_files/jquery.scrollbar.min.css">
+
+	<script src="./5_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./5_files/bootstrap.min.js.下載"></script>
+    <script src="./5_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_abstract_factory_5">
+		<input type="hidden" id="problem" name="problem" value="遊戲系統中每位戰士可以擁有配備。配備可分為兩類（防護型、 攻擊型），每種配備的效能可分為低效能和高效能兩種。防守型戰士需要高效能的防護配備以及低效能的攻擊設備；攻擊型戰士需要低效能的防護配備以及高效能的攻擊設備。規格如下:
+
+防守型配備:
+
+攻擊設備: if (w.getBodyStrength() &gt; 90) ?  new 高效能攻擊設備(&quot;Gun&quot;) : new 低效能攻擊設備(&quot;Sword&quot;);
+
+防護設備: if (w.getLifeValue() &gt; 80) ? new 低效能防護設備(&quot;Shield&quot;): new 高效能防護設備(&quot;Missile&quot;);
+
+
+
+
+
+攻擊型配備:
+
+攻擊設備: if (w.getBodyStrength() &gt;60) ?  new 高效能攻擊設備(&quot;Gun&quot;) : new 低效能攻擊設備(&quot;Sword&quot;); 
+
+防護設備: if (w.getLifeValue() &gt; 40) ?new 低效能防護設備(&quot;Shield&quot;): new 高效能防護設備(&quot;Missile&quot;);
+
+
+
+請設計適當的軟體架構產生特定的配備給戰士使用！
+
+測試程式:
+class Test {
+   public static void main(String[] args) {
+      Warrior w = new Warrior (new DefensiveEquipmentFactory() ) ;
+      w.attack();
+      w.defense();
+   }
+}">
+		<input type="hidden" id="src_codes" name="src_codes" value="class Test {
+   public static void main(String[] args) {
+      Warrior w = new Warrior (new DefensiveEquipmentFactory() ) ;
+      w.attack();
+      w.defense();
+   }
+}
+!@#$報告
+你的設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="interface AttackEquipment {
+    void show();
+}
+
+interface DefenseEquipment {
+    void show();
+}
+
+class HighEfficientAttackEquipment implements AttackEquipment {
+    private String equipment;
+
+    public HighEfficientAttackEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println(&quot;Using High Efficient Attack Equipment&quot; + equipment);
+    }
+}
+
+class LowEfficientAttackEquipment implements AttackEquipment {
+    private String equipment;
+
+    public LowEfficientAttackEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println(&quot;Using Low Efficient Attack Equipment&quot; + equipment);
+    }
+}
+
+class HighEfficientDefenseEquipment implements DefenseEquipment {
+    private String equipment;
+
+    public HighEfficientDefenseEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println(&quot;Using High Efficient Defense Equipment&quot; + equipment);
+    }
+}
+
+class LowEfficientDefenseEquipment implements DefenseEquipment {
+    private String equipment;
+
+    public LowEfficientDefenseEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println(&quot;Using Low Efficient Defense Equipment&quot; + equipment);
+    }
+}
+
+interface EquipmentFactory {
+    AttackEquipment createAttackEquipment(Warrior w);
+    DefenseEquipment createDefenseEquipment(Warrior w);
+}
+
+class AttackEquipmentFactory implements EquipmentFactory {
+    @Override
+    public AttackEquipment createAttackEquipment(Warrior w) {
+        return (w.getBodyStrength() &gt; 60) ? new HighEfficientAttackEquipment(&quot;Gun&quot;) : new LowEfficientAttackEquipment(&quot;Sword&quot;);
+    }
+    @Override
+    public DefenseEquipment createDefenseEquipment(Warrior w) {
+        return (w.getLifeValue() &gt; 40) ? new LowEfficientDefenseEquipment(&quot;Shield&quot;) : new HighEfficientDefenseEquipment(&quot;Missile&quot;);
+    }
+}
+
+class DefensiveEquipmentFactory implements EquipmentFactory {
+    @Override
+    public AttackEquipment createAttackEquipment(Warrior w) {
+        return (w.getBodyStrength() &gt; 90) ? new HighEfficientAttackEquipment(&quot;Gun&quot;) : new LowEfficientAttackEquipment(&quot;Sword&quot;);
+    }
+    @Override
+    public DefenseEquipment createDefenseEquipment(Warrior w) {
+        return (w.getLifeValue() &gt; 80) ? new LowEfficientDefenseEquipment(&quot;Shield&quot;) : new HighEfficientDefenseEquipment(&quot;Missile&quot;);
+    }
+}
+
+class Warrior {
+    private int BodyStrength = 70;
+    private int LifeValue = 50;
+    EquipmentFactory equipmentFactory;
+
+    public Warrior(EquipmentFactory equipmentFactory) {
+        this.equipmentFactory = equipmentFactory;
+    }
+    public int getBodyStrength() { return BodyStrength; }
+    public int getLifeValue() { return LifeValue; }
+
+    public void attack() {
+        equipmentFactory.createAttackEquipment(this).show();
+    }
+    public void defense() {
+        equipmentFactory.createDefenseEquipment(this).show();
+    }
+
+}
+
+public class Test {
+    public static void main(String[] args) {
+        Warrior w = new Warrior(new DefensiveEquipmentFactory());
+        w.attack();
+        w.defense();
+    }
+}
+!@#$報告
+你的設計有何優點?
+
+這個設計其實是在做一件事：把「角色怎麼選裝備」跟「角色怎麼戰鬥」拆開。
+
+以前的寫法通常會變成 Warrior 裡面自己判斷要用什麼武器、防具，但這樣一旦條件變多（力量、血量、職業、模式），Warrior 會越寫越肥，判斷一堆 if-else，之後幾乎不敢動。
+
+現在改成 EquipmentFactory 之後，情況就變了。Warrior 只做兩件事：呼叫 attack、呼叫 defense，然後把「要用什麼裝備」交給工廠處理。等於角色本身變得很乾淨，不會被一堆規則綁住。
+
+再來是彈性問題。你現在已經有兩種 factory（Attack / Defensive），代表可以用不同策略去決定裝備。如果之後老師要你加一個「Boss型」、「平衡型」、「隨機型」，你不用去動 Warrior，只要再寫一個 factory 就好，原本的東西完全不用改，這點在改作業或擴充時差很多。
+
+還有一個比較實際的點是「規則集中」。像 bodyStrength &gt; 60 用槍，不然用劍 這種判斷，如果散在 Warrior 裡，之後要改數值會很痛苦。但現在全部集中在 factory，改規則只要改一個地方，不會漏。
+
+最後可以把整個設計想成一句話：
+Warrior 不再「思考裝備」，只負責「執行動作」，裝備怎麼選是 factory 的工作。這樣程式會比較好維護，也比較不會越寫越亂。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;分析學生程式：
+
+1. 架構設計
+- 學生正確使用了「抽象工廠模式」(Abstract Factory Pattern)，將攻擊、防禦型配備工廠分開，並把 Warrior 的裝備選擇策略獨立出來，設計正確且符合物件導向的單一職責原則。
+
+2. 規則實作與題目對照
+- 「防守型配備」對於
+    * 攻擊設備: if (w.getBodyStrength() &gt; 90) ? new 高效能攻擊設備("Gun") : new 低效能攻擊設備("Sword");
+    * 防護設備: if (w.getLifeValue() &gt; 80) ? new 低效能防護設備("Shield"): new 高效能防護設備("Missile");
+- 學生的 DefensiveEquipmentFactory 實現完全正確。
+
+- 「攻擊型配備」對於
+    * 攻擊設備: if (w.getBodyStrength() &gt;60) ?  new 高效能攻擊設備("Gun") : new 低效能攻擊設備("Sword");
+    * 防護設備: if (w.getLifeValue() &gt; 40) ?new 低效能防護設備("Shield"): new 高效能防護設備("Missile");
+- 學生的 AttackEquipmentFactory 也正確。
+
+3. Warrior 實作
+- Warrior 的屬性與 getBodyStrength、getLifeValue 正確無誤。
+- 攻擊與防禦邏輯呼叫工廠方法，實現符合設計。
+
+4. 測試程式
+- main 方法符合題目 sample，能正常運作。
+
+5. 報告 (30%)
+- 學生報告完整，內容分析設計優點，包括: 抽象工廠分拆職責、規則集中、易於擴充維護、單一職責原則、彈性等，內容詳實有自行撰寫感，未有明顯AI抄襲痕跡。
+
+6. 物件導向錯誤數量
+- 幾乎無明顯物件導向錯誤。
+
+7. 其他小缺點
+- 可以進一步增加自定的 Warrior 參數（目前 BodyStrength = 70, LifeValue = 50 寫死，但題目未特別要求）。不影響正確性。
+
+綜合判斷：
+錯誤個數：0
+正確性極高，設計架構、物件導向原則皆正確。報告詳實。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;可以考慮讓 Warrior 支援設定 BodyStrength、LifeValue 作為建構子參數，提高彈性。亦可補充更多型態的 EquipmentFactory 以展現方案可擴充性。其餘無須修改。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">答案導向 (answer-oriented)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>能清楚說明任務脈絡與設計選擇</li><li>能自我總結程式設計優缺點</li></ul>
+
+					<p>缺點</p>
+					<ul><li>未與AI進行互動或認知協同，僅單向描述自身成果</li><li>缺乏追問AI、請AI評估/比較/質疑/驗證等互動表現</li><li>沒有自我監控、策略調整、或反思AI協作過程</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試請AI針對你的設計優缺點提出改進建議，並進行比較。</li><li>嘗試詢問AI對於不同設計模式的適用情境和潛在風險。</li><li>嘗試針對AI的回應進行驗證、質疑、要求證據或測試其正確性，以提升主動探索與合作品質。</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動主要是學生自我報告設計想法與程式，並未有明顯的人機互動、追問、協同修正或驗證行為，僅有表層的任務描述，缺乏高層次的認知與協作證據。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>interface AttackEquipment {
+    void show();
+}
+
+interface DefenseEquipment {
+    void show();
+}
+
+class HighEfficientAttackEquipment implements AttackEquipment {
+    private String equipment;
+
+    public HighEfficientAttackEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println("Using High Efficient Attack Equipment" + equipment);
+    }
+}
+
+class LowEfficientAttackEquipment implements AttackEquipment {
+    private String equipment;
+
+    public LowEfficientAttackEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println("Using Low Efficient Attack Equipment" + equipment);
+    }
+}
+
+class HighEfficientDefenseEquipment implements DefenseEquipment {
+    private String equipment;
+
+    public HighEfficientDefenseEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println("Using High Efficient Defense Equipment" + equipment);
+    }
+}
+
+class LowEfficientDefenseEquipment implements DefenseEquipment {
+    private String equipment;
+
+    public LowEfficientDefenseEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println("Using Low Efficient Defense Equipment" + equipment);
+    }
+}
+
+interface EquipmentFactory {
+    AttackEquipment createAttackEquipment(Warrior w);
+    DefenseEquipment createDefenseEquipment(Warrior w);
+}
+
+class AttackEquipmentFactory implements EquipmentFactory {
+    @Override
+    public AttackEquipment createAttackEquipment(Warrior w) {
+        return (w.getBodyStrength() &gt; 60) ? new HighEfficientAttackEquipment("Gun") : new LowEfficientAttackEquipment("Sword");
+    }
+    @Override
+    public DefenseEquipment createDefenseEquipment(Warrior w) {
+        return (w.getLifeValue() &gt; 40) ? new LowEfficientDefenseEquipment("Shield") : new HighEfficientDefenseEquipment("Missile");
+    }
+}
+
+class DefensiveEquipmentFactory implements EquipmentFactory {
+    @Override
+    public AttackEquipment createAttackEquipment(Warrior w) {
+        return (w.getBodyStrength() &gt; 90) ? new HighEfficientAttackEquipment("Gun") : new LowEfficientAttackEquipment("Sword");
+    }
+    @Override
+    public DefenseEquipment createDefenseEquipment(Warrior w) {
+        return (w.getLifeValue() &gt; 80) ? new LowEfficientDefenseEquipment("Shield") : new HighEfficientDefenseEquipment("Missile");
+    }
+}
+
+class Warrior {
+    private int BodyStrength = 70;
+    private int LifeValue = 50;
+    EquipmentFactory equipmentFactory;
+
+    public Warrior(EquipmentFactory equipmentFactory) {
+        this.equipmentFactory = equipmentFactory;
+    }
+    public int getBodyStrength() { return BodyStrength; }
+    public int getLifeValue() { return LifeValue; }
+
+    public void attack() {
+        equipmentFactory.createAttackEquipment(this).show();
+    }
+    public void defense() {
+        equipmentFactory.createDefenseEquipment(this).show();
+    }
+
+}
+
+public class Test {
+    public static void main(String[] args) {
+        Warrior w = new Warrior(new DefensiveEquipmentFactory());
+        w.attack();
+        w.defense();
+    }
+}
+!@#$報告
+你的設計有何優點?
+
+這個設計其實是在做一件事：把「角色怎麼選裝備」跟「角色怎麼戰鬥」拆開。
+
+以前的寫法通常會變成 Warrior 裡面自己判斷要用什麼武器、防具，但這樣一旦條件變多（力量、血量、職業、模式），Warrior 會越寫越肥，判斷一堆 if-else，之後幾乎不敢動。
+
+現在改成 EquipmentFactory 之後，情況就變了。Warrior 只做兩件事：呼叫 attack、呼叫 defense，然後把「要用什麼裝備」交給工廠處理。等於角色本身變得很乾淨，不會被一堆規則綁住。
+
+再來是彈性問題。你現在已經有兩種 factory（Attack / Defensive），代表可以用不同策略去決定裝備。如果之後老師要你加一個「Boss型」、「平衡型」、「隨機型」，你不用去動 Warrior，只要再寫一個 factory 就好，原本的東西完全不用改，這點在改作業或擴充時差很多。
+
+還有一個比較實際的點是「規則集中」。像 bodyStrength &gt; 60 用槍，不然用劍 這種判斷，如果散在 Warrior 裡，之後要改數值會很痛苦。但現在全部集中在 factory，改規則只要改一個地方，不會漏。
+
+最後可以把整個設計想成一句話：
+Warrior 不再「思考裝備」，只負責「執行動作」，裝備怎麼選是 factory 的工作。這樣程式會比較好維護，也比較不會越寫越亂。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>遊戲系統中每位戰士可以擁有配備。配備可分為兩類（防護型、 攻擊型），每種配備的效能可分為低效能和高效能兩種。防守型戰士需要高效能的防護配備以及低效能的攻擊設備；攻擊型戰士需要低效能的防護配備以及高效能的攻擊設備。規格如下:</p>
+<p>
+防守型配備:<br>
+攻擊設備: if (w.getBodyStrength() &gt; 90) ?  new 高效能攻擊設備("Gun") : new 低效能攻擊設備("Sword");<br>
+防護設備: if (w.getLifeValue() &gt; 80) ? new 低效能防護設備("Shield"): new 高效能防護設備("Missile");<br>
+
+<br>
+
+攻擊型配備:<br>
+攻擊設備: if (w.getBodyStrength() &gt;60) ?  new 高效能攻擊設備("Gun") : new 低效能攻擊設備("Sword"); <br>
+防護設備: if (w.getLifeValue() &gt; 40) ?new 低效能防護設備("Shield"): new 高效能防護設備("Missile");<br>
+</p>
+<p></p>
+請設計適當的軟體架構產生特定的配備給戰士使用！
+<p></p>
+測試程式:
+<pre>class Test {
+   public static void main(String[] args) {
+      Warrior w = new Warrior (new DefensiveEquipmentFactory() ) ;
+      w.attack();
+      w.defense();
+   }
+}
+</pre>
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">class Test {
+   public static void main(String[] args) {
+      Warrior w = new Warrior (new DefensiveEquipmentFactory() ) ;
+      w.attack();
+      w.defense();
+   }
+}
+!@#$報告
+你的設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface AttackEquipment {
+    void show();
+}
+
+interface DefenseEquipment {
+    void show();
+}
+
+class HighEfficientAttackEquipment implements AttackEquipment {
+    private String equipment;
+
+    public HighEfficientAttackEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println("Using High Efficient Attack Equipment" + equipment);
+    }
+}
+
+class LowEfficientAttackEquipment implements AttackEquipment {
+    private String equipment;
+
+    public LowEfficientAttackEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println("Using Low Efficient Attack Equipment" + equipment);
+    }
+}
+
+class HighEfficientDefenseEquipment implements DefenseEquipment {
+    private String equipment;
+
+    public HighEfficientDefenseEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println("Using High Efficient Defense Equipment" + equipment);
+    }
+}
+
+class LowEfficientDefenseEquipment implements DefenseEquipment {
+    private String equipment;
+
+    public LowEfficientDefenseEquipment(String equipment) {
+        this.equipment = equipment;
+    }
+    @Override
+    public void show() {
+        System.out.println("Using Low Efficient Defense Equipment" + equipment);
+    }
+}
+
+interface EquipmentFactory {
+    AttackEquipment createAttackEquipment(Warrior w);
+    DefenseEquipment createDefenseEquipment(Warrior w);
+}
+
+class AttackEquipmentFactory implements EquipmentFactory {
+    @Override
+    public AttackEquipment createAttackEquipment(Warrior w) {
+        return (w.getBodyStrength() &gt; 60) ? new HighEfficientAttackEquipment("Gun") : new LowEfficientAttackEquipment("Sword");
+    }
+    @Override
+    public DefenseEquipment createDefenseEquipment(Warrior w) {
+        return (w.getLifeValue() &gt; 40) ? new LowEfficientDefenseEquipment("Shield") : new HighEfficientDefenseEquipment("Missile");
+    }
+}
+
+class DefensiveEquipmentFactory implements EquipmentFactory {
+    @Override
+    public AttackEquipment createAttackEquipment(Warrior w) {
+        return (w.getBodyStrength() &gt; 90) ? new HighEfficientAttackEquipment("Gun") : new LowEfficientAttackEquipment("Sword");
+    }
+    @Override
+    public DefenseEquipment createDefenseEquipment(Warrior w) {
+        return (w.getLifeValue() &gt; 80) ? new LowEfficientDefenseEquipment("Shield") : new HighEfficientDefenseEquipment("Missile");
+    }
+}
+
+class Warrior {
+    private int BodyStrength = 70;
+    private int LifeValue = 50;
+    EquipmentFactory equipmentFactory;
+
+    public Warrior(EquipmentFactory equipmentFactory) {
+        this.equipmentFactory = equipmentFactory;
+    }
+    public int getBodyStrength() { return BodyStrength; }
+    public int getLifeValue() { return LifeValue; }
+
+    public void attack() {
+        equipmentFactory.createAttackEquipment(this).show();
+    }
+    public void defense() {
+        equipmentFactory.createDefenseEquipment(this).show();
+    }
+
+}
+
+public class Test {
+    public static void main(String[] args) {
+        Warrior w = new Warrior(new DefensiveEquipmentFactory());
+        w.attack();
+        w.defense();
+    }
+}
+!@#$報告
+你的設計有何優點?
+
+這個設計其實是在做一件事：把「角色怎麼選裝備」跟「角色怎麼戰鬥」拆開。
+
+以前的寫法通常會變成 Warrior 裡面自己判斷要用什麼武器、防具，但這樣一旦條件變多（力量、血量、職業、模式），Warrior 會越寫越肥，判斷一堆 if-else，之後幾乎不敢動。
+
+現在改成 EquipmentFactory 之後，情況就變了。Warrior 只做兩件事：呼叫 attack、呼叫 defense，然後把「要用什麼裝備」交給工廠處理。等於角色本身變得很乾淨，不會被一堆規則綁住。
+
+再來是彈性問題。你現在已經有兩種 factory（Attack / Defensive），代表可以用不同策略去決定裝備。如果之後老師要你加一個「Boss型」、「平衡型」、「隨機型」，你不用去動 Warrior，只要再寫一個 factory 就好，原本的東西完全不用改，這點在改作業或擴充時差很多。
+
+還有一個比較實際的點是「規則集中」。像 bodyStrength &gt; 60 用槍，不然用劍 這種判斷，如果散在 Warrior 裡，之後要改數值會很痛苦。但現在全部集中在 factory，改規則只要改一個地方，不會漏。
+
+最後可以把整個設計想成一句話：
+Warrior 不再「思考裝備」，只負責「執行動作」，裝備怎麼選是 factory 的工作。這樣程式會比較好維護，也比較不會越寫越亂。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
