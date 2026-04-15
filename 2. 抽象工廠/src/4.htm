@@ -1,0 +1,594 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./4_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./4_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./4_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./4_files/jquery.scrollbar.min.css">
+
+	<script src="./4_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./4_files/bootstrap.min.js.下載"></script>
+    <script src="./4_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_abstract_factory_4">
+		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反 Abstract Factory  模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+     
+
+重新撰寫VehicleClient類別
+
+public class VehicleClient {
+    private Vehicle vehicle;
+
+    public VehicleClient(VehicleFactory factory) {
+        this.vehicle = factory.createVehicle();
+    }
+
+    public void driveVehicle() {
+        vehicle.drive();
+    }
+}
+
+
+並修改程式，使得執行輸出：
+
+1.VehicleClient os = new VehicleClient(new  SedanFactory() );
+
+os.driveVehicle(); 
+
+2.VehicleClient os = new VehicleClient(new  SUVFactory() );
+
+os.driveVehicle(); 
+
+
+
+
+
+輸出: 
+
+
+Driving an Sedan
+
+
+Driving an SUV">
+		<input type="hidden" id="src_codes" name="src_codes" value="!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="interface Vehicle {
+    void drive();
+}
+
+class SUV implements Vehicle {
+    public void drive() {
+        System.out.println(&quot;Driving an SUV&quot;);
+    }
+}
+
+class Sedan implements Vehicle {
+    public void drive() {
+        System.out.println(&quot;Driving a Sedan&quot;);
+    }
+}
+
+interface VehicleFactory {
+    Vehicle createVehicle();
+}
+
+class SedanFactory implements VehicleFactory {
+    public Vehicle createVehicle() {
+        return new Sedan();
+    }
+}
+
+class SUVFactory implements VehicleFactory {
+    public Vehicle createVehicle() {
+        return new SUV();
+    }
+}
+
+class VehicleClient {
+    Vehicle vehicle;
+
+    public VehicleClient(VehicleFactory vehicleFactory) {
+        this.vehicle = vehicleFactory.createVehicle();
+    }
+
+    public void driveVehicle() {
+        vehicle.drive();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        VehicleClient os = new VehicleClient(new SedanFactory());
+        os.driveVehicle();
+        os = new VehicleClient(new SUVFactory());
+        os.driveVehicle();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個設計把「車子怎麼建立」這件事從 VehicleClient 拿掉，改交給 VehicleFactory。Client 只負責開車（drive()），至於拿到的是 Sedan 還是 SUV，是工廠決定的。
+這樣的好處是，之後要換車型時不用去改 VehicleClient。例如原本用 Sedan，現在想改成 SUV，只要在 main 換一個 Factory，其他地方不用動。Client 不會跟某一種車綁死。
+如果之後要新增新車型，例如 Truck，做法也很單純：新增一個 Truck 類別，再寫一個 TruckFactory，就可以直接用。原本的程式不需要修改，風險比較低。
+另外，所有「建立車子」的邏輯都集中在 Factory。現在看起來只是 new，但如果未來建立車子需要額外設定或初始化，只要改 Factory 就好，不用到處找。
+整體來說，這個設計讓程式在更換車型、增加新功能時比較容易處理，也不太會影響到原本已經寫好的部分。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;程式碼完全正確，無任何錯誤。學生的 VehicleClient 使用 VehicleFactory 注入方式來建立 Vehicle 物件，並未違反 Abstract Factory 模式，反而正確實踐該設計模式精神。main 函數測試 SedanFactory 與 SUVFactory 皆能正確執行並輸出：Driving a Sedan 與 Driving an SUV，完全符合題意。
+
+報告方面，內容明確闡述了設計的優點，包括：
+1. 把建立物件的細節交給 Factory，使用者不用關心物件的實體類型。
+2. 更容易新增車型，符合開放-封閉原則。
+3. 客戶端不會綁定特定車型，增強彈性。
+4. 物件建立集中於 Factory，未來擴充方便。
+以上皆為 Abstract Factory 模式的重要優點，報告內容真實且合理。
+
+查驗報告內容為自行撰寫、非直接抄襲與 AI 生成的資料。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;無需修正，已經完全正確。如果要簡化程式，可以將 VehicleClient 的 vehicle 欄位改為 private 並加上 getter 或其它封裝細節。若需要擴充，可考慮將 Factory 再細分以支援更複雜（如引擎、顏色等）零件的組裝。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>能明確描述設計方案的基本優點與情境。</li><li>有對問題場景、設計決策給出具體敘述。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>完全缺乏對AI或自身程式理解的檢查、批判與思辨。</li><li>沒有比較不同設計方式，亦未針對潛在錯誤、侷限或例外情境進行討論。</li><li>互動屬於表層回報，未展現認知挑戰與策略調整。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試針對AI的內容提出質疑，或提出更多可能的設計選擇比較其優缺點。</li><li>加入錯誤追蹤、驗證與測試（如修改後是否正確、或與原方法比對結果）。</li><li>定期自我反思學會／沒學會的地方，或問AI「有沒有其他更好的寫法」等。</li><li>將AI當作認知夥伴，而不僅是抄答案的對象。</li></ul>
+
+					<p>總評</p>
+					<pre>整體互動僅限於描述和重複程式設計的表面優點，未展現進一步的認知參與、質疑、比較、驗證或自我調節。互動屬於表層修正，缺乏高層次深度參與。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>interface Vehicle {
+    void drive();
+}
+
+class SUV implements Vehicle {
+    public void drive() {
+        System.out.println("Driving an SUV");
+    }
+}
+
+class Sedan implements Vehicle {
+    public void drive() {
+        System.out.println("Driving a Sedan");
+    }
+}
+
+interface VehicleFactory {
+    Vehicle createVehicle();
+}
+
+class SedanFactory implements VehicleFactory {
+    public Vehicle createVehicle() {
+        return new Sedan();
+    }
+}
+
+class SUVFactory implements VehicleFactory {
+    public Vehicle createVehicle() {
+        return new SUV();
+    }
+}
+
+class VehicleClient {
+    Vehicle vehicle;
+
+    public VehicleClient(VehicleFactory vehicleFactory) {
+        this.vehicle = vehicleFactory.createVehicle();
+    }
+
+    public void driveVehicle() {
+        vehicle.drive();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        VehicleClient os = new VehicleClient(new SedanFactory());
+        os.driveVehicle();
+        os = new VehicleClient(new SUVFactory());
+        os.driveVehicle();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個設計把「車子怎麼建立」這件事從 VehicleClient 拿掉，改交給 VehicleFactory。Client 只負責開車（drive()），至於拿到的是 Sedan 還是 SUV，是工廠決定的。
+這樣的好處是，之後要換車型時不用去改 VehicleClient。例如原本用 Sedan，現在想改成 SUV，只要在 main 換一個 Factory，其他地方不用動。Client 不會跟某一種車綁死。
+如果之後要新增新車型，例如 Truck，做法也很單純：新增一個 Truck 類別，再寫一個 TruckFactory，就可以直接用。原本的程式不需要修改，風險比較低。
+另外，所有「建立車子」的邏輯都集中在 Factory。現在看起來只是 new，但如果未來建立車子需要額外設定或初始化，只要改 Factory 就好，不用到處找。
+整體來說，這個設計讓程式在更換車型、增加新功能時比較容易處理，也不太會影響到原本已經寫好的部分。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface Vehicle {
+    void drive();
+}
+
+class SUV implements Vehicle {
+    public void drive() {
+        System.out.println("Driving an SUV");
+    }
+}
+
+class Sedan implements Vehicle {
+    public void drive() {
+        System.out.println("Driving a Sedan");
+    }
+}
+
+interface VehicleFactory {
+    Vehicle createVihicle();
+}
+
+class SedanFactory implements VehicleFactory {
+    public Vehicle createVihicle() {
+        return new Sedan();
+    }
+}
+
+class SUVFactory implements VehicleFactory {
+    public Vehicle createVihicle() {
+        return new SUV();
+
+    }
+}
+
+class VehicleClient {
+    Vehicle vehicle;
+
+    public VehicleClient(VehicleFactory vehicleFactory) {
+        this.vehicle = vehicleFactory.createVihicle();
+    }
+
+    public void driveVehicle() {
+        vehicle.drive();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        VehicleClient os = new VehicleClient(new SedanFactory());
+        os.driveVehicle();
+        os = new VehicleClient(new SUVFactory());
+        os.driveVehicle();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個設計把「車子怎麼建立」這件事從 VehicleClient 拿掉，改交給 VehicleFactory。Client 只負責開車（drive()），至於拿到的是 Sedan 還是 SUV，是工廠決定的。
+這樣的好處是，之後要換車型時不用去改 VehicleClient。例如原本用 Sedan，現在想改成 SUV，只要在 main 換一個 Factory，其他地方不用動。Client 不會跟某一種車綁死。
+如果之後要新增新車型，例如 Truck，做法也很單純：新增一個 Truck 類別，再寫一個 TruckFactory，就可以直接用。原本的程式不需要修改，風險比較低。
+另外，所有「建立車子」的邏輯都集中在 Factory。現在看起來只是 new，但如果未來建立車子需要額外設定或初始化，只要改 Factory 就好，不用到處找。
+整體來說，這個設計讓程式在更換車型、增加新功能時比較容易處理，也不太會影響到原本已經寫好的部分。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>請檢視程式碼介面是否違反 Abstract Factory  模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./4_files/UML1.png" target="_blank">   <img src="./4_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+重新撰寫VehicleClient類別<br>
+<pre style="width:500px; height:300px;">public class VehicleClient {
+    private Vehicle vehicle;
+
+    public VehicleClient(VehicleFactory factory) {
+        this.vehicle = factory.createVehicle();
+    }
+
+    public void driveVehicle() {
+        vehicle.drive();
+    }
+}
+</pre>
+
+並修改程式，使得執行輸出：<br>
+1.VehicleClient os = new VehicleClient(new  SedanFactory() );<br>
+os.driveVehicle(); <br>
+2.VehicleClient os = new VehicleClient(new  SUVFactory() );<br>
+os.driveVehicle(); <br>
+<br>
+
+
+輸出: <br>
+
+Driving an Sedan<br>
+
+Driving an SUV <br>
+
+<br>
+<br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface Vehicle {
+    void drive();
+}
+
+class SUV implements Vehicle {
+    public void drive() {
+        System.out.println("Driving an SUV");
+    }
+}
+
+class Sedan implements Vehicle {
+    public void drive() {
+        System.out.println("Driving a Sedan");
+    }
+}
+
+interface VehicleFactory {
+    Vehicle createVehicle();
+}
+
+class SedanFactory implements VehicleFactory {
+    public Vehicle createVehicle() {
+        return new Sedan();
+    }
+}
+
+class SUVFactory implements VehicleFactory {
+    public Vehicle createVehicle() {
+        return new SUV();
+    }
+}
+
+class VehicleClient {
+    Vehicle vehicle;
+
+    public VehicleClient(VehicleFactory vehicleFactory) {
+        this.vehicle = vehicleFactory.createVehicle();
+    }
+
+    public void driveVehicle() {
+        vehicle.drive();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        VehicleClient os = new VehicleClient(new SedanFactory());
+        os.driveVehicle();
+        os = new VehicleClient(new SUVFactory());
+        os.driveVehicle();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個設計把「車子怎麼建立」這件事從 VehicleClient 拿掉，改交給 VehicleFactory。Client 只負責開車（drive()），至於拿到的是 Sedan 還是 SUV，是工廠決定的。
+這樣的好處是，之後要換車型時不用去改 VehicleClient。例如原本用 Sedan，現在想改成 SUV，只要在 main 換一個 Factory，其他地方不用動。Client 不會跟某一種車綁死。
+如果之後要新增新車型，例如 Truck，做法也很單純：新增一個 Truck 類別，再寫一個 TruckFactory，就可以直接用。原本的程式不需要修改，風險比較低。
+另外，所有「建立車子」的邏輯都集中在 Factory。現在看起來只是 new，但如果未來建立車子需要額外設定或初始化，只要改 Factory 就好，不用到處找。
+整體來說，這個設計讓程式在更換車型、增加新功能時比較容易處理，也不太會影響到原本已經寫好的部分。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
