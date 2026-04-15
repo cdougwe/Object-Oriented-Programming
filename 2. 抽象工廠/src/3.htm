@@ -1,0 +1,538 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./3_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./3_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./3_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./3_files/jquery.scrollbar.min.css">
+
+	<script src="./3_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./3_files/bootstrap.min.js.下載"></script>
+    <script src="./3_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_abstract_factory_3">
+		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反 Abstract Factory  模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+    
+
+重新撰寫ChairClient類別
+
+public class ChairClient {
+    private Chair chair;
+
+    public ChairClient(ChairFactory factory) {
+        this.chair = factory.createChair();
+    }
+
+    public void useChair() {
+        chair.sitOn();
+    }
+}
+
+並修改程式，使得執行輸出：
+
+1.ChairClient os = new ChairClient(new  OfficeChairFactory() );
+
+os.useChair(); 
+
+2.ChairClient os = new ChairClient(new  GamingChairFactory() );
+
+os.useChair(); 
+
+
+
+
+
+輸出: 
+
+
+Sitting on Office Chair
+
+
+Sitting on Gaming Chair">
+		<input type="hidden" id="src_codes" name="src_codes" value="!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="interface Chair {
+    void sitOn();
+}
+
+class GamingChair implements Chair {
+    public void sitOn() {
+        System.out.println(&quot;Sitting on Gaming Chair&quot;);
+    }
+}
+
+class OfficeChair implements Chair {
+    public void sitOn() {
+        System.out.println(&quot;Sitting on Office Chair&quot;);
+    }
+}
+
+interface ChairFactory {
+    Chair createChair();
+}
+
+class OfficeChairFactory implements ChairFactory {
+    @Override
+    public Chair createChair() {
+        return new OfficeChair();
+    }
+}
+
+class GamingChairFactory implements ChairFactory {
+    @Override
+    public Chair createChair() {
+        return new GamingChair();
+    }
+}
+
+class ChairClient {
+    private Chair chair;
+
+    public ChairClient(ChairFactory chairFactory) {
+        this.chair = chairFactory.createChair();
+    }
+
+    public void useChair() {
+        chair.sitOn();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ChairClient os = new ChairClient(new OfficeChairFactory());
+        os.useChair();
+        os = new ChairClient(new GamingChairFactory());
+        os.useChair();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個設計把「椅子的建立」跟「椅子的使用」分開來處理。ChairClient 不再自己決定要用哪一種椅子，而是透過 ChairFactory 取得物件，所以它只負責使用 sitOn()，不需要知道實際是哪一種椅子。
+
+這樣的改動讓程式在修改時比較單純。原本如果在 Client 裡直接寫死某一種椅子，之後要更換或新增種類，就一定要回頭改這段程式。但現在只要換一個 Factory，就能改變使用的椅子種類，原本的 Client 不用動。
+
+在擴充上也比較方便。如果未來要新增新的椅子類型，例如其他功能的椅子，只需要新增對應的類別與工廠，就可以直接接進來使用，不需要修改既有程式，降低出錯的機會。
+
+另外，物件建立的地方被集中在 Factory 中。如果之後建立椅子的過程變得比較複雜，例如需要初始化或設定參數，只需要在工廠中調整，不用在多個地方重複修改，維護起來會比較容易。
+
+整體來說，這個新設計讓程式在更換、擴充以及維護時都比較簡單，也比較不容易因為修改影響到其他部分。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;程式本身完全符合 Abstract Factory 模式的設計精神，ChairFactory 作為抽象工廠介面，OfficeChairFactory 與 GamingChairFactory 為其具體實作，而 ChairClient 只依賴工廠與介面，不直接創建具體產品。main 方法的測試結果也正確，完全符合題目要求的輸出。
+
+報告部分內容合乎要求，合理解釋了此設計優點，包括：將物件建立職責集中、符合開放封閉原則、有利於維護與擴充、降低耦合等，敘述清楚且具體。語句合乎邏輯並無明顯AI機器自動生成特徵，沒有抄襲跡象。
+
+程式錯誤個數：0，整體正確。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本題已完全符合 Abstract Factory 模式原則，以及題目與輸出需求。若要進一步優化，ChairClient 可加註些註解說明設計用意，亦建議加上 package 宣告（如在實務開發中）。report/content 可以多新增幾點維護與單元測試層面的具體例子（例如：mock ChairFactory 測試 ChairClient）。但現有內容已足夠。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">答案導向 (answer-oriented)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>展現了針對題目的解釋能力，能條理清楚說明設計改動的好處</li><li>有明確描述設計目標與產生的實用性</li></ul>
+
+					<p>缺點</p>
+					<ul><li>與AI互動成分極低，沒有請求AI進行任何檢查、驗證、比較或反思</li><li>缺乏主動追問、質疑AI、驗證觀點或策略調整行為</li><li>無共同建構或協商，僅單方面陳述</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試主動提出問題、讓AI解釋代碼設計的不同選擇與影響</li><li>進行多方案比較，請AI協助分析並討論最佳選擇及原因</li><li>在描述後，可請AI驗證代碼或反思設計上的盲點，培養自我監控和批判性思維</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動僅展現在題目範圍內的回答，雖條理明確但幾無任何深度互動或合作，缺乏人機協同或主體性行為。需增強反思、追問、驗證等高層次互動。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>interface Chair {
+    void sitOn();
+}
+
+class GamingChair implements Chair {
+    public void sitOn() {
+        System.out.println("Sitting on Gaming Chair");
+    }
+}
+
+class OfficeChair implements Chair {
+    public void sitOn() {
+        System.out.println("Sitting on Office Chair");
+    }
+}
+
+interface ChairFactory {
+    Chair createChair();
+}
+
+class OfficeChairFactory implements ChairFactory {
+    @Override
+    public Chair createChair() {
+        return new OfficeChair();
+    }
+}
+
+class GamingChairFactory implements ChairFactory {
+    @Override
+    public Chair createChair() {
+        return new GamingChair();
+    }
+}
+
+class ChairClient {
+    private Chair chair;
+
+    public ChairClient(ChairFactory chairFactory) {
+        this.chair = chairFactory.createChair();
+    }
+
+    public void useChair() {
+        chair.sitOn();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ChairClient os = new ChairClient(new OfficeChairFactory());
+        os.useChair();
+        os = new ChairClient(new GamingChairFactory());
+        os.useChair();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個設計把「椅子的建立」跟「椅子的使用」分開來處理。ChairClient 不再自己決定要用哪一種椅子，而是透過 ChairFactory 取得物件，所以它只負責使用 sitOn()，不需要知道實際是哪一種椅子。
+
+這樣的改動讓程式在修改時比較單純。原本如果在 Client 裡直接寫死某一種椅子，之後要更換或新增種類，就一定要回頭改這段程式。但現在只要換一個 Factory，就能改變使用的椅子種類，原本的 Client 不用動。
+
+在擴充上也比較方便。如果未來要新增新的椅子類型，例如其他功能的椅子，只需要新增對應的類別與工廠，就可以直接接進來使用，不需要修改既有程式，降低出錯的機會。
+
+另外，物件建立的地方被集中在 Factory 中。如果之後建立椅子的過程變得比較複雜，例如需要初始化或設定參數，只需要在工廠中調整，不用在多個地方重複修改，維護起來會比較容易。
+
+整體來說，這個新設計讓程式在更換、擴充以及維護時都比較簡單，也比較不容易因為修改影響到其他部分。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>請檢視程式碼介面是否違反 Abstract Factory  模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+<a href="./3_files/UML1.png" target="_blank">   <img src="./3_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+重新撰寫ChairClient類別<br>
+<pre style="width:500px; height:300px;">public class ChairClient {
+    private Chair chair;
+
+    public ChairClient(ChairFactory factory) {
+        this.chair = factory.createChair();
+    }
+
+    public void useChair() {
+        chair.sitOn();
+    }
+}</pre>
+
+並修改程式，使得執行輸出：<br>
+1.ChairClient os = new ChairClient(new  OfficeChairFactory() );<br>
+os.useChair(); <br>
+2.ChairClient os = new ChairClient(new  GamingChairFactory() );<br>
+os.useChair(); <br>
+<br>
+
+
+輸出: <br>
+
+Sitting on Office Chair<br>
+
+Sitting on Gaming Chair <br>
+
+<br>
+<br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface Chair {
+    void sitOn();
+}
+
+class GamingChair implements Chair {
+    public void sitOn() {
+        System.out.println("Sitting on Gaming Chair");
+    }
+}
+
+class OfficeChair implements Chair {
+    public void sitOn() {
+        System.out.println("Sitting on Office Chair");
+    }
+}
+
+interface ChairFactory {
+    Chair createChair();
+}
+
+class OfficeChairFactory implements ChairFactory {
+    @Override
+    public Chair createChair() {
+        return new OfficeChair();
+    }
+}
+
+class GamingChairFactory implements ChairFactory {
+    @Override
+    public Chair createChair() {
+        return new GamingChair();
+    }
+}
+
+class ChairClient {
+    private Chair chair;
+
+    public ChairClient(ChairFactory chairFactory) {
+        this.chair = chairFactory.createChair();
+    }
+
+    public void useChair() {
+        chair.sitOn();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ChairClient os = new ChairClient(new OfficeChairFactory());
+        os.useChair();
+        os = new ChairClient(new GamingChairFactory());
+        os.useChair();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個設計把「椅子的建立」跟「椅子的使用」分開來處理。ChairClient 不再自己決定要用哪一種椅子，而是透過 ChairFactory 取得物件，所以它只負責使用 sitOn()，不需要知道實際是哪一種椅子。
+
+這樣的改動讓程式在修改時比較單純。原本如果在 Client 裡直接寫死某一種椅子，之後要更換或新增種類，就一定要回頭改這段程式。但現在只要換一個 Factory，就能改變使用的椅子種類，原本的 Client 不用動。
+
+在擴充上也比較方便。如果未來要新增新的椅子類型，例如其他功能的椅子，只需要新增對應的類別與工廠，就可以直接接進來使用，不需要修改既有程式，降低出錯的機會。
+
+另外，物件建立的地方被集中在 Factory 中。如果之後建立椅子的過程變得比較複雜，例如需要初始化或設定參數，只需要在工廠中調整，不用在多個地方重複修改，維護起來會比較容易。
+
+整體來說，這個新設計讓程式在更換、擴充以及維護時都比較簡單，也比較不容易因為修改影響到其他部分。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
