@@ -174,7 +174,7 @@ function escapeHtml(str) {
 	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
 	 </div>
 	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
-	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_adapter_1">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_adapter_2">
 		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反 Adapter模式，並撰寫報告，討論新設計有何優點?
 
 
@@ -184,115 +184,98 @@ function escapeHtml(str) {
   
 
 修改使得：
- 
- Shape p = new LegacyRectangleAdapter(new Point(0, 0), new Point(10, 10));
- p.draw();  //顯示 &quot;畫出(0, 0)-(10, 10)的長方形。&quot;
- p = new LegacyCircleAdapter(new Point(0, 0), 5.0));
- p.draw();  //顯示 &quot;畫出圓心(0, 0)，半徑5.0的圓形。&quot;">
-		<input type="hidden" id="src_codes" name="src_codes" value="public class LegacyRectangle {
-    public void draw(int x1, int y1, int x2, int y2) {
-        System.out.println(&quot;Drawing rectangle from point (&quot; + x1 + &quot;,&quot; + y1 + &quot;) to point (&quot; + x2 + &quot;,&quot; + y2 + &quot;)&quot;);
-    }
-}
-public class Main {
+   PaymentProcessor p = new PaymentProcessor( new OldPaymentAdapter() );
+   p.pay(10000 );
+   //顯示 &quot;Payment of 1000 made using old system&quot;。">
+		<input type="hidden" id="src_codes" name="src_codes" value="public class Main {
     public static void main(String[] args) {        
-      RectangleAdapter ra = new RectangleAdapter (new LegacyRectangle ());
-      ra.draw(new Point(0,0), new Point(10,10))  ;
-      ra.drawShape(&quot;Nonagon&quot;) ;
-   }
-}
-public class RectangleAdapter {
-    private LegacyRectangle legacyRectangle;
-    public RectangleAdapter(LegacyRectangle legacyRectangle) {
-        this.legacyRectangle = legacyRectangle;
+       NewPaymentProcessor np = new NewPaymentProcessor (new OldPaymentSystem ());
+       np.processPayment( 25)  ;
     }
-    public void draw(Point topLeft, Point bottomRight) {
-        legacyRectangle.draw(topLeft.getX(), topLeft.getY(), bottomRight.getX(), bottomRight.getY());
+}
+public class NewPaymentProcessor {
+    private OldPaymentSystem oldPaymentSystem;
+    public NewPaymentProcessor(OldPaymentSystem oldPaymentSystem) {
+        this.oldPaymentSystem = oldPaymentSystem;
+    }
+    public void processPayment(double amount) {
+        oldPaymentSystem.makePayment(amount);
+    }
+}
+public classOldPaymentProcessor {
+    private OldPaymentSystem oldPaymentSystem;
+    public NewPaymentProcessor(OldPaymentSystem oldPaymentSystem) {
+        this.oldPaymentSystem = oldPaymentSystem;
+    }
+    public void processPayment(double amount) {
+        oldPaymentSystem.makePayment(amount);
+    }
+}
+public class OldPaymentSystem {
+    public void makePayment(double amount) {
+        System.out.println(&quot;Payment of &quot; + amount + &quot; made using old system&quot;);
     }
 }
 !@#$報告
 新設計有何優點?!@#$
 ">
-		<input type="hidden" id="codes" name="codes" value="interface Shape {
-    void draw();
+		<input type="hidden" id="codes" name="codes" value="interface PaymentTarget {
+    void makePayment(double amount);
 }
 
-class Point {
-    protected int x, y;
+class OldPaymentProcessor {
+    private OldPaymentSystem oldPaymentSystem;
 
-    public Point(int x, int y) {
-        this.x = x;
-        this.y = y;
+    public OldPaymentProcessor(OldPaymentSystem oldPaymentSystem) {
+        this.oldPaymentSystem = oldPaymentSystem;
     }
-
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public void setX(int x) { this.x = x; }
-    public void setY(int y) { this.y = y; }
-}
-
-class LegacyCircle {
-    public void draw(int x, int y, double radius) {
-        System.out.println(&quot;畫出圓心(&quot; + x + &quot; ,&quot; + y + &quot;)，半徑&quot; + radius + &quot;的圓形。&quot;);
+    public void processPayment(double amount) {
+        oldPaymentSystem.makePayment(amount);
     }
 }
 
-class LegacyCircleAdapter implements Shape {
-    private LegacyCircle legacyCircle = new LegacyCircle();
-    private Point point;
-    private double radius;
-
-    public LegacyCircleAdapter(Point point, double radius) {
-        this.point = point;
-        this.radius = radius;
+class OldPaymentSystem {
+    public void makePayment(double amount) {
+        System.out.println(&quot;Payment of &quot; + amount + &quot; made using old system&quot;);
     }
+}
+
+class OldPaymentAdapter implements PaymentTarget {
+    private OldPaymentSystem oldPaymentSystem = new OldPaymentSystem();
 
     @Override
-    public void draw() {
-        legacyCircle.draw(point.getX(), point.getY(), radius);
+    public void makePayment(double amount) {
+        oldPaymentSystem.makePayment(amount);
     }
 }
 
-class LegacyRectangle {
-    public void draw(int x1, int y1, int x2, int y2) {
-        System.out.println(&quot;畫出 (&quot; + x1 + &quot;,&quot; + y1 + &quot;)-(&quot; + x2 + &quot;,&quot; + y2 + &quot;)的長方形。&quot;);
-    }
-}
+class PaymentProcessor {
+    private PaymentTarget target;
 
-class LegacyRectangleAdapter implements Shape {
-    private LegacyRectangle legacyRectangle = new LegacyRectangle();
-    private Point topLeft, bottomRight;
-
-    public LegacyRectangleAdapter(Point topLeft, Point bottomRight) {
-        this.topLeft = topLeft;
-        this.bottomRight = bottomRight;
+    public PaymentProcessor(PaymentTarget target) {
+        this.target = target;
     }
-    @Override
-    public void draw() {
-        legacyRectangle.draw(topLeft.getX(), topLeft.getY(), bottomRight.getX(), bottomRight.getY());
+    public void pay(double amount) {
+        target.makePayment(amount);
     }
 }
 
 public class Main {
     public static void main(String[] args) {
-        Shape p = new LegacyRectangleAdapter(new Point(0, 0), new Point(10, 10));
-        p.draw(); // 顯示 &quot;畫出(0, 0)-(10, 10)的長方形。&quot;
-        p = new LegacyCircleAdapter(new Point(0, 0), 5.0);
-        p.draw(); // 顯示 &quot;畫出圓心(0, 0)，半徑5.0的圓形。&quot;
+        PaymentProcessor p = new PaymentProcessor(new OldPaymentAdapter());
+        p.pay(10000);
     }
 }
+
 !@#$報告
 新設計有何優點?
 
-這個程式主要是在用 Adapter Pattern，把原本不能直接用的舊類別包起來，讓它們可以用同一個方式操作。
-
-一開始先定義了一個 Shape 介面，裡面只有一個 draw()，代表所有圖形最後都要能畫出來。但問題是，原本的 LegacyCircle 跟 LegacyRectangle 都不是照這個規格寫的，它們的 draw 都要吃一堆參數，像圓形要 (x, y, radius)，長方形要 (x1, y1, x2, y2)，所以沒辦法直接拿來當 Shape 用。
-
-這時候就用 Adapter 來解決。像 LegacyCircleAdapter，它裡面包了一個 LegacyCircle，然後自己存一個 Point 跟 radius。當外面呼叫 draw() 時，它會把 Point 拆成 x 跟 y，再丟給原本的 draw(x, y, radius)。長方形也是一樣的做法，把兩個點轉成四個座標再呼叫舊的方法。
-
-這樣做的好處是，主程式完全不用管底層到底是圓形還是長方形，也不用記那些參數怎麼傳，只要一律用 Shape 然後呼叫 draw() 就好。像 Shape p = new LegacyRectangleAdapter(...) 或換成圓形都可以直接用，寫起來會簡單很多。
-
-簡單來說，Adapter 就是在中間多包一層，幫你把「不一樣的格式轉成一樣的」，讓舊的程式也能接到新的架構裡面用。!@#$
+這段就是在解一個很實際的問題：新系統想用一個統一的付款介面 PaymentTarget，但舊的 OldPaymentSystem 根本不是照這個規格寫的，所以沒辦法直接用。
+做法很簡單，中間加一層 OldPaymentAdapter。PaymentProcessor 只會跟 PaymentTarget 溝通，它呼叫 makePayment()，然後 Adapter 再幫你轉去呼叫舊系統的 makePayment()。等於是幫兩邊「翻譯」。
+這樣的好處很明顯，舊系統完全不用改。現實中這種舊程式通常不敢動，一動可能整個壞掉，用 Adapter 包起來就安全很多。
+再來是之後比較好換東西。假設你未來不用舊系統了，改用新的付款系統，你只要再寫一個新的 Adapter 接上去就好，PaymentProcessor 那邊不用動。
+還有一點是，所有「轉換怎麼做」的東西都集中在 Adapter 裡。如果哪天舊系統的用法改了，你只要改這一層，不用去翻整個程式。
+簡單講，就是讓舊東西不用改也能接上新系統，而且之後要換實作也不會影響到主要程式。!@#$
 ">
 		
 		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
@@ -301,113 +284,100 @@ public class Main {
 	     
 		    程式碼分數: <span id="SCORE">100</span><br>
 	
-		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本題要求檢查是否違反 Adapter 模式，並設計：能以 Shape p = new LegacyRectangleAdapter(new Point(0, 0), new Point(10, 10)); p.draw(); 及 p = new LegacyCircleAdapter(new Point(0, 0), 5.0); p.draw(); 方式被呼叫，印出預期訊息。也要撰寫報告討論優點。\n\n主要檢查點：\n1. Shape 介面正確，draw() 符合題意。\n2. Adapter 實作正確，將 Legacy 物件中的 draw(param, ...) 包裝進 Adapter，符合 Adapter Pattern 原則。\n3. Main 呼叫方式與題意一致。\n4. 輸出內容、格式。\n5. 報告內容與原理、優點敘述。\n\n【學生錯誤/遺漏】\n1. 幾乎無程式設計錯誤，完全符合 Adapter Pattern，自行建構 Point，封裝 legacy 物件，覆寫 draw()。\n2. 輸出格式：「畫出 (0,0)-(10,10)的長方形。」--- OK\n    「畫出圓心(0,0)，半徑5.0的圓形。」--- OK（注意：數字與逗號的寫法和題目相同，沒大問題）\n3. 報告有自己撰寫說明，有解釋 Adapter Pattern、以及優點（統一介面、降低主程式耦合）；文字通順無明顯抄襲 ChatGPT/AIGC 痕跡，內容合理。\n\n【總結】\n學生完全掌握 Adapter 模式的目的與優點，程式設計均無誤。&lt;/pre&gt;</div>
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生的程式碼正確實現了Adapter模式，並未違反其原則，且能符合題目需求：
+1. 有PaymentTarget介面（新系統規範要走的接口），OldPaymentAdapter實作PaymentTarget。
+2. OldPaymentAdapter內部包了OldPaymentSystem，完成舊-&gt;新系統的轉接。
+3. PaymentProcessor只依賴PaymentTarget介面，實體可帶入Adapter。
+4. main方法能正確執行，並輸出題意所需的結果。
+
+在物件導向設計上，Student將「適配器」的角色責任分離得很好，各自職責清楚，符合Single Responsibility及Open/Closed原則，無明顯OOP違誤。
+
+程式錯誤個數：0。
+
+報告方面，內容表達清楚，並非AI抄襲，且明確指出Adapter模式的優點，包括解耦合、方便系統更換舊組件、舊系統安全無須更動等，分析貼切且具體。
+
+總結：程式及報告皆達到題意，無重大缺陷。&lt;/pre&gt;</div>
 			 
-		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;已完全正確，若欲進一步加強可說明 LegacyRectangleAdapter、 LegacyCircleAdapter 都應盡量以 composition （物件成員包裝），而非 inheritance。\n有空可將 legacy* 物件改由建構子注入（Dependency Injection），提升彈性。&lt;/pre&gt;</div>
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 雖然沒有必要，但若需增強彈性的話，OldPaymentAdapter建議使用外部注入OldPaymentSystem物件（建構子提供），以便測試或未來擴充。
+2. PaymentTarget接口命名和方法參數型別已一致，保持清晰即可。
+3. 若要支援不同種類付款（例如NewPaymentSystem），可持續擴充Adapter。
+
+整體已表現優秀，不需大幅修正。&lt;/pre&gt;</div>
 		
-		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.83</span><br>
 	
-			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">答案導向 (answer-oriented)</div>
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
 	
 		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
 					<p>優點</p>
-					<ul><li>能清楚描述設計模式的基本原理和改動動機。</li><li>能口語化解釋轉換後實際帶來的好處。</li></ul>
+					<ul><li>能明確描述任務需求與限制，並逐步明確具體化題目條件。</li><li>完成了根據AI建議逐步修正程式架構，能說明設計優點與目的（有表層分析）。</li></ul>
 
 					<p>缺點</p>
-					<ul><li>缺乏對 AI 回應內容的驗證、比較或質疑。</li><li>未展現策略調整、反思、延伸或自我監控行為。</li><li>互動停留於表層說明與單向知識陳述，缺乏認知深化。</li></ul>
+					<ul><li>缺乏深層驗證、比較、質疑AI方案的行為，未展現高層次自我調節或自主監控。</li><li>互動初期情緒用語嚴重，對AI協作缺乏基本互信與反思，反饋多數僅停留在直接索取答案或表層修正。</li><li>很少主動解釋自己選擇的理由、也沒有提出測試或追問可能性，未展現高主體性。</li></ul>
 
 				</div>
 			 
 		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
-					<ul><li>可主動詢問 AI 這樣的設計是否還有潛在問題，或是否存在更好的設計。</li><li>嘗試提出自己的看法或對 AI 建議進行驗證，比較不同做法的優缺點。</li><li>描述執行結果或假設例外情況，檢查設計是否健全，提升互動層次。</li></ul>
+					<ul><li>建議嘗試主動驗證或測試自己的程式設計，如提供特殊情境結果來檢證。</li><li>可多比較不同的 Adapter 實作方法，或主動詢問為何要這樣選擇、優缺點比較。</li><li>在指出需求或反饋時，應盡量以理性、具專業素養的語言溝通，培養良好協作態度。</li></ul>
 
 					<p>總評</p>
-					<pre>本次互動以單向流程描述與表面設計解釋為主，任務導向有做基本說明，但缺乏進一步批判、探究、反思等高層次互動表現，互動品質屬於初階答案陳述類型。</pre>
+					<pre>本次人機互動雖能明確任務導向、依AI建議逐輪修正，且能基本解釋設計優點，但缺乏高層次自我調控、驗證與批判性思考。尤其初期多次語言失當，無助於有效協作，建議強化合作溝通與主體性學習。</pre>
 				</div>
 			
 			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
 						<div class="utterance-item">
-							<pre>interface Shape {
-    void draw();
-}
-
-class Point {
-    protected int x, y;
-
-    public Point(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public void setX(int x) { this.x = x; }
-    public void setY(int y) { this.y = y; }
-}
-
-class LegacyCircle {
-    public void draw(int x, int y, double radius) {
-        System.out.println("畫出圓心(" + x + " ," + y + ")，半徑" + radius + "的圓形。");
-    }
-}
-
-class LegacyCircleAdapter implements Shape {
-    private LegacyCircle legacyCircle = new LegacyCircle();
-    private Point point;
-    private double radius;
-
-    public LegacyCircleAdapter(Point point, double radius) {
-        this.point = point;
-        this.radius = radius;
-    }
-
-    @Override
-    public void draw() {
-        legacyCircle.draw(point.getX(), point.getY(), radius);
-    }
-}
-
-class LegacyRectangle {
-    public void draw(int x1, int y1, int x2, int y2) {
-        System.out.println("畫出 (" + x1 + "," + y1 + ")-(" + x2 + "," + y2 + ")的長方形。");
-    }
-}
-
-class LegacyRectangleAdapter implements Shape {
-    private LegacyRectangle legacyRectangle = new LegacyRectangle();
-    private Point topLeft, bottomRight;
-
-    public LegacyRectangleAdapter(Point topLeft, Point bottomRight) {
-        this.topLeft = topLeft;
-        this.bottomRight = bottomRight;
-    }
-    @Override
-    public void draw() {
-        legacyRectangle.draw(topLeft.getX(), topLeft.getY(), bottomRight.getX(), bottomRight.getY());
-    }
-}
-
-public class Main {
-    public static void main(String[] args) {
-        Shape p = new LegacyRectangleAdapter(new Point(0, 0), new Point(10, 10));
-        p.draw(); // 顯示 "畫出(0, 0)-(10, 10)的長方形。"
-        p = new LegacyCircleAdapter(new Point(0, 0), 5.0);
-        p.draw(); // 顯示 "畫出圓心(0, 0)，半徑5.0的圓形。"
-    }
-}
+							<pre>我要答案</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>main他媽能改嗎死廢物main就不行改，你在那邊害我被扣分，傻逼吧你</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>修改使得：
+   PaymentProcessor p = new PaymentProcessor( new OldPaymentAdapter() );
+   p.pay(10000 );
+   //顯示 "Payment of 1000 made using old system"。題目在這你智障吧不會看題目要你給答案自己在那邊亂搞，我要答案</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface PaymentTarget {...程式碼... }</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface PaymentTarget {...程式碼... }
 !@#$報告
 新設計有何優點?
 
-這個程式主要是在用 Adapter Pattern，把原本不能直接用的舊類別包起來，讓它們可以用同一個方式操作。
+這段就是在解一個很實際的問題：...（一段解釋）...</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface PaymentTarget {...程式碼... }
+!@#$報告
+新設計有何優點?
 
-一開始先定義了一個 Shape 介面，裡面只有一個 draw()，代表所有圖形最後都要能畫出來。但問題是，原本的 LegacyCircle 跟 LegacyRectangle 都不是照這個規格寫的，它們的 draw 都要吃一堆參數，像圓形要 (x, y, radius)，長方形要 (x1, y1, x2, y2)，所以沒辦法直接拿來當 Shape 用。
+這段就是在解一個很實際的問題：...（一段解釋）...</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>interface PaymentTarget {...程式碼... }
+!@#$報告
+新設計有何優點?
 
-這時候就用 Adapter 來解決。像 LegacyCircleAdapter，它裡面包了一個 LegacyCircle，然後自己存一個 Point 跟 radius。當外面呼叫 draw() 時，它會把 Point 拆成 x 跟 y，再丟給原本的 draw(x, y, radius)。長方形也是一樣的做法，把兩個點轉成四個座標再呼叫舊的方法。
-
-這樣做的好處是，主程式完全不用管底層到底是圓形還是長方形，也不用記那些參數怎麼傳，只要一律用 Shape 然後呼叫 draw() 就好。像 Shape p = new LegacyRectangleAdapter(...) 或換成圓形都可以直接用，寫起來會簡單很多。
-
-簡單來說，Adapter 就是在中間多包一層，幫你把「不一樣的格式轉成一樣的」，讓舊的程式也能接到新的架構裡面用。!@#$
-</pre>
+這段就是在解一個很實際的問題：...（一段解釋）...</pre>
 							
 						</div>
 						<hr>
@@ -425,12 +395,9 @@ public class Main {
  <img title="放大" class="exercise_image" src="./1_files/UML1.png" style="width:300px; height:200px;"> </a>
 </div>
 修改使得：
-<pre style="width:500px; height:300px;"> 
- Shape p = new LegacyRectangleAdapter(new Point(0, 0), new Point(10, 10));
- p.draw();  //顯示 "畫出(0, 0)-(10, 10)的長方形。"
- p = new LegacyCircleAdapter(new Point(0, 0), 5.0));
- p.draw();  //顯示 "畫出圓心(0, 0)，半徑5.0的圓形。"
-
+<pre style="width:500px; height:300px;">   PaymentProcessor p = new PaymentProcessor( new OldPaymentAdapter() );
+   p.pay(10000 );
+   //顯示 "Payment of 1000 made using old system"。
 </pre>
  <br>
  <br>
@@ -441,25 +408,33 @@ public class Main {
     </div>
 	 
     <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
-     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class LegacyRectangle {
-    public void draw(int x1, int y1, int x2, int y2) {
-        System.out.println("Drawing rectangle from point (" + x1 + "," + y1 + ") to point (" + x2 + "," + y2 + ")");
-    }
-}
-public class Main {
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class Main {
     public static void main(String[] args) {        
-      RectangleAdapter ra = new RectangleAdapter (new LegacyRectangle ());
-      ra.draw(new Point(0,0), new Point(10,10))  ;
-      ra.drawShape("Nonagon") ;
-   }
-}
-public class RectangleAdapter {
-    private LegacyRectangle legacyRectangle;
-    public RectangleAdapter(LegacyRectangle legacyRectangle) {
-        this.legacyRectangle = legacyRectangle;
+       NewPaymentProcessor np = new NewPaymentProcessor (new OldPaymentSystem ());
+       np.processPayment( 25)  ;
     }
-    public void draw(Point topLeft, Point bottomRight) {
-        legacyRectangle.draw(topLeft.getX(), topLeft.getY(), bottomRight.getX(), bottomRight.getY());
+}
+public class NewPaymentProcessor {
+    private OldPaymentSystem oldPaymentSystem;
+    public NewPaymentProcessor(OldPaymentSystem oldPaymentSystem) {
+        this.oldPaymentSystem = oldPaymentSystem;
+    }
+    public void processPayment(double amount) {
+        oldPaymentSystem.makePayment(amount);
+    }
+}
+public classOldPaymentProcessor {
+    private OldPaymentSystem oldPaymentSystem;
+    public NewPaymentProcessor(OldPaymentSystem oldPaymentSystem) {
+        this.oldPaymentSystem = oldPaymentSystem;
+    }
+    public void processPayment(double amount) {
+        oldPaymentSystem.makePayment(amount);
+    }
+}
+public class OldPaymentSystem {
+    public void makePayment(double amount) {
+        System.out.println("Payment of " + amount + " made using old system");
     }
 }
 !@#$報告
@@ -469,86 +444,63 @@ public class RectangleAdapter {
 
 
     <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
-     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface Shape {
-    void draw();
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface PaymentTarget {
+    void makePayment(double amount);
 }
 
-class Point {
-    protected int x, y;
+class OldPaymentProcessor {
+    private OldPaymentSystem oldPaymentSystem;
 
-    public Point(int x, int y) {
-        this.x = x;
-        this.y = y;
+    public OldPaymentProcessor(OldPaymentSystem oldPaymentSystem) {
+        this.oldPaymentSystem = oldPaymentSystem;
     }
-
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public void setX(int x) { this.x = x; }
-    public void setY(int y) { this.y = y; }
-}
-
-class LegacyCircle {
-    public void draw(int x, int y, double radius) {
-        System.out.println("畫出圓心(" + x + " ," + y + ")，半徑" + radius + "的圓形。");
+    public void processPayment(double amount) {
+        oldPaymentSystem.makePayment(amount);
     }
 }
 
-class LegacyCircleAdapter implements Shape {
-    private LegacyCircle legacyCircle = new LegacyCircle();
-    private Point point;
-    private double radius;
-
-    public LegacyCircleAdapter(Point point, double radius) {
-        this.point = point;
-        this.radius = radius;
+class OldPaymentSystem {
+    public void makePayment(double amount) {
+        System.out.println("Payment of " + amount + " made using old system");
     }
+}
+
+class OldPaymentAdapter implements PaymentTarget {
+    private OldPaymentSystem oldPaymentSystem = new OldPaymentSystem();
 
     @Override
-    public void draw() {
-        legacyCircle.draw(point.getX(), point.getY(), radius);
+    public void makePayment(double amount) {
+        oldPaymentSystem.makePayment(amount);
     }
 }
 
-class LegacyRectangle {
-    public void draw(int x1, int y1, int x2, int y2) {
-        System.out.println("畫出 (" + x1 + "," + y1 + ")-(" + x2 + "," + y2 + ")的長方形。");
-    }
-}
+class PaymentProcessor {
+    private PaymentTarget target;
 
-class LegacyRectangleAdapter implements Shape {
-    private LegacyRectangle legacyRectangle = new LegacyRectangle();
-    private Point topLeft, bottomRight;
-
-    public LegacyRectangleAdapter(Point topLeft, Point bottomRight) {
-        this.topLeft = topLeft;
-        this.bottomRight = bottomRight;
+    public PaymentProcessor(PaymentTarget target) {
+        this.target = target;
     }
-    @Override
-    public void draw() {
-        legacyRectangle.draw(topLeft.getX(), topLeft.getY(), bottomRight.getX(), bottomRight.getY());
+    public void pay(double amount) {
+        target.makePayment(amount);
     }
 }
 
 public class Main {
     public static void main(String[] args) {
-        Shape p = new LegacyRectangleAdapter(new Point(0, 0), new Point(10, 10));
-        p.draw(); // 顯示 "畫出(0, 0)-(10, 10)的長方形。"
-        p = new LegacyCircleAdapter(new Point(0, 0), 5.0);
-        p.draw(); // 顯示 "畫出圓心(0, 0)，半徑5.0的圓形。"
+        PaymentProcessor p = new PaymentProcessor(new OldPaymentAdapter());
+        p.pay(10000);
     }
 }
+
 !@#$報告
 新設計有何優點?
 
-這個程式主要是在用 Adapter Pattern，把原本不能直接用的舊類別包起來，讓它們可以用同一個方式操作。
-
-一開始先定義了一個 Shape 介面，裡面只有一個 draw()，代表所有圖形最後都要能畫出來。但問題是，原本的 LegacyCircle 跟 LegacyRectangle 都不是照這個規格寫的，它們的 draw 都要吃一堆參數，像圓形要 (x, y, radius)，長方形要 (x1, y1, x2, y2)，所以沒辦法直接拿來當 Shape 用。
-
-這時候就用 Adapter 來解決。像 LegacyCircleAdapter，它裡面包了一個 LegacyCircle，然後自己存一個 Point 跟 radius。當外面呼叫 draw() 時，它會把 Point 拆成 x 跟 y，再丟給原本的 draw(x, y, radius)。長方形也是一樣的做法，把兩個點轉成四個座標再呼叫舊的方法。
-
-這樣做的好處是，主程式完全不用管底層到底是圓形還是長方形，也不用記那些參數怎麼傳，只要一律用 Shape 然後呼叫 draw() 就好。像 Shape p = new LegacyRectangleAdapter(...) 或換成圓形都可以直接用，寫起來會簡單很多。
-
-簡單來說，Adapter 就是在中間多包一層，幫你把「不一樣的格式轉成一樣的」，讓舊的程式也能接到新的架構裡面用。!@#$
+這段就是在解一個很實際的問題：新系統想用一個統一的付款介面 PaymentTarget，但舊的 OldPaymentSystem 根本不是照這個規格寫的，所以沒辦法直接用。
+做法很簡單，中間加一層 OldPaymentAdapter。PaymentProcessor 只會跟 PaymentTarget 溝通，它呼叫 makePayment()，然後 Adapter 再幫你轉去呼叫舊系統的 makePayment()。等於是幫兩邊「翻譯」。
+這樣的好處很明顯，舊系統完全不用改。現實中這種舊程式通常不敢動，一動可能整個壞掉，用 Adapter 包起來就安全很多。
+再來是之後比較好換東西。假設你未來不用舊系統了，改用新的付款系統，你只要再寫一個新的 Adapter 接上去就好，PaymentProcessor 那邊不用動。
+還有一點是，所有「轉換怎麼做」的東西都集中在 Adapter 裡。如果哪天舊系統的用法改了，你只要改這一層，不用去翻整個程式。
+簡單講，就是讓舊東西不用改也能接上新系統，而且之後要換實作也不會影響到主要程式。!@#$
 </textarea>
     </div>
 	
