@@ -1,0 +1,626 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./2_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./2_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./2_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./2_files/jquery.scrollbar.min.css">
+
+	<script src="./2_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./2_files/bootstrap.min.js.下載"></script>
+    <script src="./2_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_abstract_factory_2">
+		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反 Abstract Factory  模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+    
+
+重新撰寫OSClient類別
+
+public class OSClient {
+    private OperatingSystem os;
+
+    public OSClient(OperatingSystemFactory factory) {
+        this.os = factory.createOperatingSystem();
+    }
+
+    public void displayOperatingSystem() {
+        os.display();
+    }
+}
+
+
+並修改程式，使得執行輸出：
+
+1.OSClient os = new OSClient(new  Windows10Factory() );
+
+os.displayOperatingSystem(); 
+
+2.OSClient os = new OSClient(new  Windows11Factory() );
+
+os.displayOperatingSystem(); 
+
+
+
+
+
+輸出: 
+
+
+Displaying Windows 10
+
+
+Displaying Windows 11">
+		<input type="hidden" id="src_codes" name="src_codes" value="public class OperatingSystemFactory {
+    public Windows10 createWindows10() {
+        return new Windows10();
+    }
+
+    public Windows11 createWindows11() {
+        return new Windows11();
+    }
+}
+public class OSClient {
+    private Windows10 windows10;
+    private Windows11 windows11;
+
+    public OSClient() {
+        OperatingSystemFactory factory = new OperatingSystemFactory();
+        this.windows10 = factory.createWindows10();
+        this.windows11 = factory.createWindows11();
+    }
+
+    public void displayOperatingSystems() {
+        windows10.display();
+        windows11.display();
+    }
+}
+public class Windows10 {
+    public void display() {
+        System.out.println(&quot;Displaying Windows 10&quot;);
+    }
+}
+public class Windows11 {
+    public void display() {
+        System.out.println(&quot;Displaying Windows 11&quot;);
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="interface OperatingSystem {
+    void display();
+}
+
+class Windows10 implements OperatingSystem {
+    @Override
+    public void display() {
+        System.out.println(&quot;Displaying Windows 10&quot;);
+    }
+}
+
+class Windows11 implements OperatingSystem {
+    @Override
+    public void display() {
+        System.out.println(&quot;Displaying Windows 11&quot;);
+    }
+}
+
+interface OperatingSystemFactory {
+    OperatingSystem createWindows();
+}
+
+class Windows10Factory implements OperatingSystemFactory {
+    @Override
+    public OperatingSystem createWindows() {
+        return new Windows10();
+    }
+}
+
+class Windows11Factory implements OperatingSystemFactory {
+    @Override
+    public OperatingSystem createWindows() {
+        return new Windows11();
+    }
+}
+
+class OSClient {
+    private OperatingSystem operatingSystem;
+
+    public OSClient(OperatingSystemFactory operatingSystemFactory) {
+        this.operatingSystem = operatingSystemFactory.createWindows();
+    }
+
+    public void displayOperatingSystem() {
+        operatingSystem.display();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        OSClient os = new OSClient(new Windows10Factory());
+        os.displayOperatingSystem();
+        os = new OSClient(new Windows11Factory());
+        os.displayOperatingSystem();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個新設計的重點在於把「建立作業系統物件」這件事獨立出來，交給 OperatingSystemFactory 處理，而不是讓 OSClient 自己去決定要 new Windows10 還是 Windows11。
+
+這樣做最直接的好處是，OSClient 變得很單純，它只負責呼叫 display()，完全不需要知道底層是哪個版本。也因為只依賴 OperatingSystem 這個介面，所以之後要換版本或新增版本，不會影響到這段程式。
+
+在擴充上也比較乾淨。假設要加入 Windows12，只需要新增對應的類別和 Factory，原本的程式幾乎不用改。也就是說，功能可以一直加，但舊程式可以維持不動，穩定性會比較好。
+
+另外，物件建立的邏輯都集中在 Factory 裡面。現在看起來只是簡單 new，但如果未來建立過程變複雜（例如初始化、參數設定），只要改 Factory 就好，不用到處找程式碼修改。
+
+整體來看，這個設計讓「怎麼建立物件」跟「怎麼使用物件」分開，程式在修改、擴充時比較不容易互相影響，也比較好維護。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生的程式完全改正了原始程式違反 Abstract Factory 模式的設計錯誤：
+
+錯誤個數：0。
+
+主要優點與正確性分析：
+1. 學生將 Windows10 和 Windows11 都實作了 OperatingSystem 介面，符合多型設計。
+2. 將 OperatingSystemFactory 設為介面，再由 Windows10Factory、Windows11Factory 負責建立具體的作業系統類別，達成工廠方法與 Abstract Factory 精神。
+3. OSClient 只依賴 OperatingSystem 介面，不直接依賴具體類別，解耦性高。
+4. 測試 main 方法切換 Windows10Factory 與 Windows11Factory，能正確且動態產生對應物件。
+5. 輸出完全符合題目要求："Displaying Windows 10"、"Displaying Windows 11"。
+6. 報告清楚解釋優點，並有結構性分析，且敘述符合常見手寫水平，未明顯抄襲、複製 AI 自動生成內容。
+
+所以正確性與物件導向原則皆有達成。
+
+綜合評分：程式碼 70/70，報告 30/30，總分 100 分。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;已完全符合 Abstract Factory 設計模式，幾乎無需修改。
+
+若要更貼近實務，可以將介面命名改為更具體（如 createOperatingSystem），保持一致性。也可以將 OperatingSystemFactory 的方法定義為 createOperatingSystem，比 createWindows 更抽象、可擴充。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">3.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">高主體性 (high-agency)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>明確自我界定設計問題、脈絡與成功標準</li><li>對設計背後邏輯及未來擴充有自主反思</li><li>展現知識主動整理，以及主動進行認知轉化與說明</li></ul>
+
+					<p>缺點</p>
+					<ul><li>欠缺與 AI 互動協作歷程（主要為單方自述）</li><li>缺少具體驗證、測試、比較或質疑 AI 行為</li><li>未展現人機協同問題細緻迭代</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>可嘗試和 AI 進行進一步設計上的討論或協作，共同探索解決方案或進行比較分析</li><li>主動請 AI 提出另一種工廠方法設計進行優劣比較，激發更多層次的批判性思維</li><li>針對 AI 給的建議與程式碼，進行驗證或詢問其適用範圍及極限</li></ul>
+
+					<p>總評</p>
+					<pre>此回合展現極高主體性與深入自我反思，但全程為學生自述，還未有實質人機協同或驗證歷程。雖然認知、規劃、評估等層面極強，但互動合作與驗證尚可加強。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>interface OperatingSystem {
+    void display();
+}
+
+class Windows10 implements OperatingSystem {
+    @Override
+    public void display() {
+        System.out.println("Displaying Windows 10");
+    }
+}
+
+class Windows11 implements OperatingSystem {
+    @Override
+    public void display() {
+        System.out.println("Displaying Windows 11");
+    }
+}
+
+interface OperatingSystemFactory {
+    OperatingSystem createWindows();
+}
+
+class Windows10Factory implements OperatingSystemFactory {
+    @Override
+    public OperatingSystem createWindows() {
+        return new Windows10();
+    }
+}
+
+class Windows11Factory implements OperatingSystemFactory {
+    @Override
+    public OperatingSystem createWindows() {
+        return new Windows11();
+    }
+}
+
+class OSClient {
+    private OperatingSystem operatingSystem;
+
+    public OSClient(OperatingSystemFactory operatingSystemFactory) {
+        this.operatingSystem = operatingSystemFactory.createWindows();
+    }
+
+    public void displayOperatingSystem() {
+        operatingSystem.display();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        OSClient os = new OSClient(new Windows10Factory());
+        os.displayOperatingSystem();
+        os = new OSClient(new Windows11Factory());
+        os.displayOperatingSystem();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個新設計的重點在於把「建立作業系統物件」這件事獨立出來，交給 OperatingSystemFactory 處理，而不是讓 OSClient 自己去決定要 new Windows10 還是 Windows11。
+
+這樣做最直接的好處是，OSClient 變得很單純，它只負責呼叫 display()，完全不需要知道底層是哪個版本。也因為只依賴 OperatingSystem 這個介面，所以之後要換版本或新增版本，不會影響到這段程式。
+
+在擴充上也比較乾淨。假設要加入 Windows12，只需要新增對應的類別和 Factory，原本的程式幾乎不用改。也就是說，功能可以一直加，但舊程式可以維持不動，穩定性會比較好。
+
+另外，物件建立的邏輯都集中在 Factory 裡面。現在看起來只是簡單 new，但如果未來建立過程變複雜（例如初始化、參數設定），只要改 Factory 就好，不用到處找程式碼修改。
+
+整體來看，這個設計讓「怎麼建立物件」跟「怎麼使用物件」分開，程式在修改、擴充時比較不容易互相影響，也比較好維護。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>請檢視程式碼介面是否違反 Abstract Factory  模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./2_files/UML1.png" target="_blank">  <img src="./2_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+重新撰寫OSClient類別<br>
+<pre style="width:500px; height:300px;">public class OSClient {
+    private OperatingSystem os;
+
+    public OSClient(OperatingSystemFactory factory) {
+        this.os = factory.createOperatingSystem();
+    }
+
+    public void displayOperatingSystem() {
+        os.display();
+    }
+}
+</pre>
+
+並修改程式，使得執行輸出：<br>
+1.OSClient os = new OSClient(new  Windows10Factory() );<br>
+os.displayOperatingSystem(); <br>
+2.OSClient os = new OSClient(new  Windows11Factory() );<br>
+os.displayOperatingSystem(); <br>
+<br>
+
+
+輸出: <br>
+
+Displaying Windows 10<br>
+
+Displaying Windows 11 <br>
+
+<br>
+<br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class OperatingSystemFactory {
+    public Windows10 createWindows10() {
+        return new Windows10();
+    }
+
+    public Windows11 createWindows11() {
+        return new Windows11();
+    }
+}
+public class OSClient {
+    private Windows10 windows10;
+    private Windows11 windows11;
+
+    public OSClient() {
+        OperatingSystemFactory factory = new OperatingSystemFactory();
+        this.windows10 = factory.createWindows10();
+        this.windows11 = factory.createWindows11();
+    }
+
+    public void displayOperatingSystems() {
+        windows10.display();
+        windows11.display();
+    }
+}
+public class Windows10 {
+    public void display() {
+        System.out.println("Displaying Windows 10");
+    }
+}
+public class Windows11 {
+    public void display() {
+        System.out.println("Displaying Windows 11");
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">interface OperatingSystem {
+    void display();
+}
+
+class Windows10 implements OperatingSystem {
+    @Override
+    public void display() {
+        System.out.println("Displaying Windows 10");
+    }
+}
+
+class Windows11 implements OperatingSystem {
+    @Override
+    public void display() {
+        System.out.println("Displaying Windows 11");
+    }
+}
+
+interface OperatingSystemFactory {
+    OperatingSystem createWindows();
+}
+
+class Windows10Factory implements OperatingSystemFactory {
+    @Override
+    public OperatingSystem createWindows() {
+        return new Windows10();
+    }
+}
+
+class Windows11Factory implements OperatingSystemFactory {
+    @Override
+    public OperatingSystem createWindows() {
+        return new Windows11();
+    }
+}
+
+class OSClient {
+    private OperatingSystem operatingSystem;
+
+    public OSClient(OperatingSystemFactory operatingSystemFactory) {
+        this.operatingSystem = operatingSystemFactory.createWindows();
+    }
+
+    public void displayOperatingSystem() {
+        operatingSystem.display();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        OSClient os = new OSClient(new Windows10Factory());
+        os.displayOperatingSystem();
+        os = new OSClient(new Windows11Factory());
+        os.displayOperatingSystem();
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個新設計的重點在於把「建立作業系統物件」這件事獨立出來，交給 OperatingSystemFactory 處理，而不是讓 OSClient 自己去決定要 new Windows10 還是 Windows11。
+
+這樣做最直接的好處是，OSClient 變得很單純，它只負責呼叫 display()，完全不需要知道底層是哪個版本。也因為只依賴 OperatingSystem 這個介面，所以之後要換版本或新增版本，不會影響到這段程式。
+
+在擴充上也比較乾淨。假設要加入 Windows12，只需要新增對應的類別和 Factory，原本的程式幾乎不用改。也就是說，功能可以一直加，但舊程式可以維持不動，穩定性會比較好。
+
+另外，物件建立的邏輯都集中在 Factory 裡面。現在看起來只是簡單 new，但如果未來建立過程變複雜（例如初始化、參數設定），只要改 Factory 就好，不用到處找程式碼修改。
+
+整體來看，這個設計讓「怎麼建立物件」跟「怎麼使用物件」分開，程式在修改、擴充時比較不容易互相影響，也比較好維護。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
