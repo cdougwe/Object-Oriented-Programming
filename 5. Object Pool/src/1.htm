@@ -1,0 +1,650 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./1_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./1_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./1_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./1_files/jquery.scrollbar.min.css">
+
+	<script src="./1_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./1_files/bootstrap.min.js.下載"></script>
+    <script src="./1_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_object_pool_1">
+		<input type="hidden" id="problem" name="problem" value="設計一個 ConnectionPool 類別來管理 Connection 物件的重複使用，避免頻繁建立與銷毀連線。請實作 borrowConnection() 和 returnConnection() 方法，確保獲取的物件是可重複使用的。
+請檢視程式碼介面是否違反  Object Pool 模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改 Main類別：
+ 
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(2);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+
+        Connection conn2 = pool.borrowConnection();
+        conn2.connect();
+    }
+}
+
+
+並修改其他程式，使得執行輸出：
+
+Connected successfully.
+
+
+Connected successfully.">
+		<input type="hidden" id="src_codes" name="src_codes" value="class Connection {
+    public void connect() {
+        System.out.println(&quot;Connecting...&quot;);
+    }
+}
+class ConnectionPool {
+    public Connection borrowConnection() {
+        return new Connection(); 
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+      ConnectionPool  pool = new ConnectionPool( ) ;
+      Connection  con = pool. borrowConnection() ;
+       con.connect();
+  }
+}
+
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="import java.util.LinkedList;
+
+class Connection {
+    public void connect() {
+        System.out.println(&quot;Connected successfully.&quot;);
+    }
+}
+
+class ConnectionPool {
+    private int maxSize, Count = 0;
+    private LinkedList&lt;Connection&gt; pool = new LinkedList&lt;&gt;();
+
+    public ConnectionPool(int size) {
+        this.maxSize = size;
+    }
+
+    public Connection borrowConnection() {
+        if (!pool.isEmpty()) {
+            return pool.removeFirst();
+        }
+        if (Count &lt; maxSize) {
+            Count++;
+            return new Connection();
+        }
+        return null;
+    }
+    public void returnConnection(Connection connection) {
+        if (connection != null &amp;&amp; pool.size() &lt; maxSize) {
+            pool.addLast(connection);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(2);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+        Connection conn2 = pool.borrowConnection();
+        conn2.connect();
+    }
+}
+!@#$報告
+新設計有何優點?這個設計的核心優點在於「資源重用」與「控制成本」。傳統每次需要連線時都直接 new Connection()，看起來簡單，但如果在高頻率情境下（例如伺服器大量請求），物件建立與銷毀會帶來明顯的效能負擔。而這個 ConnectionPool 則改為先建立少量連線並重複使用，用完再放回池中，下次直接拿現成的，避免不必要的建立成本。
+
+再來是「數量控管」。透過 maxSize 限制最多只能建立固定數量的連線，可以避免系統因為過多連線而耗盡資源。像你這裡設為 2，就算程式一直要連線，也不會無限制增加，這在實務上（例如資料庫連線）非常重要。
+
+另外一個優點是「集中管理」。所有連線都由 ConnectionPool 統一負責借出與回收，不會分散在各處亂 new，讓程式結構更清楚，也更容易維護。假設之後要加上連線初始化、關閉機制或記錄使用狀態，只需要改 pool，不用動其他地方。
+
+沒 pool：每次 new Connection() -&gt;用完丟掉（浪費）
+有 pool：第一次建好-&gt; 之後一直重用（省成本）
+
+總結來說，這種設計主要提升了效能、穩定性與可維護性，特別適合用在「建立成本高、但會重複使用」的物件，例如資料庫連線、執行緒等。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;一、程式正確性與物件導向分析： 本題重點是設計正確的 Object Pool（物件池）模式，確保 Connection 物件重複利用、規避頻繁建立與銷毀。\n\n1. 功能性檢查：\n執行結果：\nConnected successfully.\nConnected successfully.\n\n完全符合題目需求。\n\n2. Object Pool 模式檢查：\n- ConnectionPool 維護了最大連線數（maxSize）以及連線池（pool），並有邏輯管理連線的取得（borrowConnection）與歸還（returnConnection）。\n- 若池內有可用 Connection，就直接取出，否則才建立新物件。用完後可以 return 回池內，這完全符合 Object Pool 模式。\n- 若連線總數達到最大值且池內無可用連線會回傳 null，雖然此處未處理阻塞等待，但題目並未要求。\n\n3. 其他物件導向檢查：\n- 無不當滲透細節或跨層存取。\n- Connection 實作單一職責（僅連線），Pool 負責統一管理，分層設計清楚。\n\n4. 錯誤數：本程式邏輯未見明顯錯誤。若要更嚴格，可考慮命名一致（Count 建議改為 count），但不影響正確性。\n\n二、報告檢查：\n- 內容流暢、無明顯抄襲AI自動產生痕跡，觀點明確提到資源重用、成本降低、集中管理等重點，解釋具體且具體化，與程式碼設計一致。\n\n三、評分：\n程式符合需求並正確運作：70/70\n報告內容具體合理：30/30\n\n總分：100/100\n\n四、具體改進建議：\n1. 變數命名建議將 Count 換為 count 或 currentCount，以符合Java慣例（變數小寫開頭）。\n2. 若要增強池的健壯度，可考慮在 borrowConnection 遇到無可用連線時丟出異常或阻塞等待，而非單純回 null。\n3. 可補充 Connection 是否要 reset 狀態（如有借還過程中的資源清理需求）。\n4. 建議將 pool 用 private final 修飾，提高封裝性。\n\n總之，學生設計完全正確，結構清晰且切合物件導向設計原理，不違反Object Pool 模式，且程式與說明皆有水準，建議無需太大更動。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;1. 將 ConnectionPool 中的 "Count" 變數更名為 "count"，符合Java命名慣例。\n2. 若需更強健性，borrowConnection() 可考慮在無資源時拋例外或暫停等待，而非直接回傳 null（進階）。\n3. 更新類型宣告，如 LinkedList&lt;Connection&gt; pool = new LinkedList&lt;&gt;(); 部分，可以宣告為 private final，提升封裝。\n4. 若 Connection 會帶有額外狀態，returnConnection 時可重置狀態（目前僅呼叫 connect 方法影響不大）。\n5. 對多執行緒應用可考慮併發安全，例如用 synchronized 或 ConcurrentLinkedQueue（本題單執行緒架構亦可接受）。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.5</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>清楚說明設計目標及設計內容。</li><li>有明確指出專案所解決的問題與帶來的優點。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>幾乎沒有與AI展開深度互動或討論，也沒有比較、驗證或質疑。</li><li>互動主要停留在表層修正，無實質討論不同方案與認知深化。</li><li>缺乏主動規劃、反思或自我監控行為。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>嘗試詢問AI不同實作方式的優缺點，或請AI評估現有設計的極限。</li><li>可以提問如何驗證程式正確性，或者詢問在其他應用場景下的表現（如高併發、有例外處理需要時）。</li><li>主動反思程式可能的缺陷，邀請AI共同思考改進策略。</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動以程式重複提交並給出同一份設計想法為主，只有最初有較完整的設計說明，之後皆屬於表層修正及內容重複。並未與AI產生有深度的認知、反思、或策略性對話，互動品質屬於『表層修正』型，僅展現基礎理解與有限的小幅度修改，缺少高層次互動與學習行為。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>import java.util.LinkedList;
+
+class Connection {
+    public void connect() {
+        System.out.println("Connecting...");
+    }
+}
+
+class ConnectionPool {
+    private int maxSize, Count = 0;
+    private LinkedList<connection> pool = new LinkedList&lt;&gt;();
+
+    public ConnectionPool(int size) {
+        this.maxSize = size;
+    }
+
+    public Connection borrowConnection() {
+        if (!pool.isEmpty()) {
+            return pool.removeFirst();
+        }
+        if (Count &lt; maxSize) {
+            Count++;
+            return new Connection();
+        }
+        return null;
+    }
+    public void returnConnection(Connection connection) {
+        if (connection != null &amp;&amp; pool.size() &lt; maxSize) {
+            pool.addLast(connection);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(2);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+        Connection conn2 = pool.borrowConnection();
+        conn2.connect();
+    }
+}
+!@#$報告
+新設計有何優點?這個設計的核心優點在於「資源重用」與「控制成本」。傳統每次需要連線時都直接 new Connection()，看起來簡單，但如果在高頻率情境下（例如伺服器大量請求），物件建立與銷毀會帶來明顯的效能負擔。而這個 ConnectionPool 則改為先建立少量連線並重複使用，用完再放回池中，下次直接拿現成的，避免不必要的建立成本。
+
+再來是「數量控管」。透過 maxSize 限制最多只能建立固定數量的連線，可以避免系統因為過多連線而耗盡資源。像你這裡設為 2，就算程式一直要連線，也不會無限制增加，這在實務上（例如資料庫連線）非常重要。
+
+另外一個優點是「集中管理」。所有連線都由 ConnectionPool 統一負責借出與回收，不會分散在各處亂 new，讓程式結構更清楚，也更容易維護。假設之後要加上連線初始化、關閉機制或記錄使用狀態，只需要改 pool，不用動其他地方。
+
+沒 pool：每次 new Connection() -&gt;用完丟掉（浪費）
+有 pool：第一次建好-&gt; 之後一直重用（省成本）
+
+總結來說，這種設計主要提升了效能、穩定性與可維護性，特別適合用在「建立成本高、但會重複使用」的物件，例如資料庫連線、執行緒等。!@#$
+</connection></pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>import java.util.LinkedList;
+
+class Connection {
+    public void connect() {
+        System.out.println("Connected successfully.");
+    }
+}
+
+class ConnectionPool {
+    private int maxSize, Count = 0;
+    private LinkedList<connection> pool = new LinkedList&lt;&gt;();
+
+    public ConnectionPool(int size) {
+        this.maxSize = size;
+    }
+
+    public Connection borrowConnection() {
+        if (!pool.isEmpty()) {
+            return pool.removeFirst();
+        }
+        if (Count &lt; maxSize) {
+            Count++;
+            return new Connection();
+        }
+        return null;
+    }
+    public void returnConnection(Connection connection) {
+        if (connection != null &amp;&amp; pool.size() &lt; maxSize) {
+            pool.addLast(connection);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(2);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+        Connection conn2 = pool.borrowConnection();
+        conn2.connect();
+    }
+}
+!@#$報告
+新設計有何優點?這個設計的核心優點在於「資源重用」與「控制成本」。傳統每次需要連線時都直接 new Connection()，看起來簡單，但如果在高頻率情境下（例如伺服器大量請求），物件建立與銷毀會帶來明顯的效能負擔。而這個 ConnectionPool 則改為先建立少量連線並重複使用，用完再放回池中，下次直接拿現成的，避免不必要的建立成本。
+
+再來是「數量控管」。透過 maxSize 限制最多只能建立固定數量的連線，可以避免系統因為過多連線而耗盡資源。像你這裡設為 2，就算程式一直要連線，也不會無限制增加，這在實務上（例如資料庫連線）非常重要。
+
+另外一個優點是「集中管理」。所有連線都由 ConnectionPool 統一負責借出與回收，不會分散在各處亂 new，讓程式結構更清楚，也更容易維護。假設之後要加上連線初始化、關閉機制或記錄使用狀態，只需要改 pool，不用動其他地方。
+
+沒 pool：每次 new Connection() -&gt;用完丟掉（浪費）
+有 pool：第一次建好-&gt; 之後一直重用（省成本）
+
+總結來說，這種設計主要提升了效能、穩定性與可維護性，特別適合用在「建立成本高、但會重複使用」的物件，例如資料庫連線、執行緒等。!@#$
+</connection></pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>import java.util.LinkedList;
+
+class Connection {
+    public void connect() {
+        System.out.println("Connected successfully.");
+    }
+}
+
+class ConnectionPool {
+    private int maxSize, Count = 0;
+    private LinkedList<connection> pool = new LinkedList&lt;&gt;();
+
+    public ConnectionPool(int size) {
+        this.maxSize = size;
+    }
+
+    public Connection borrowConnection() {
+        if (!pool.isEmpty()) {
+            return pool.removeFirst();
+        }
+        if (Count &lt; maxSize) {
+            Count++;
+            return new Connection();
+        }
+        return null;
+    }
+    public void returnConnection(Connection connection) {
+        if (connection != null &amp;&amp; pool.size() &lt; maxSize) {
+            pool.addLast(connection);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(2);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+        Connection conn2 = pool.borrowConnection();
+        conn2.connect();
+    }
+}
+!@#$報告
+新設計有何優點?這個設計的核心優點在於「資源重用」與「控制成本」。傳統每次需要連線時都直接 new Connection()，看起來簡單，但如果在高頻率情境下（例如伺服器大量請求），物件建立與銷毀會帶來明顯的效能負擔。而這個 ConnectionPool 則改為先建立少量連線並重複使用，用完再放回池中，下次直接拿現成的，避免不必要的建立成本。
+
+再來是「數量控管」。透過 maxSize 限制最多只能建立固定數量的連線，可以避免系統因為過多連線而耗盡資源。像你這裡設為 2，就算程式一直要連線，也不會無限制增加，這在實務上（例如資料庫連線）非常重要。
+
+另外一個優點是「集中管理」。所有連線都由 ConnectionPool 統一負責借出與回收，不會分散在各處亂 new，讓程式結構更清楚，也更容易維護。假設之後要加上連線初始化、關閉機制或記錄使用狀態，只需要改 pool，不用動其他地方。
+
+沒 pool：每次 new Connection() -&gt;用完丟掉（浪費）
+有 pool：第一次建好-&gt; 之後一直重用（省成本）
+
+總結來說，這種設計主要提升了效能、穩定性與可維護性，特別適合用在「建立成本高、但會重複使用」的物件，例如資料庫連線、執行緒等。!@#$
+</connection></pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>設計一個 ConnectionPool 類別來管理 Connection 物件的重複使用，避免頻繁建立與銷毀連線。請實作 borrowConnection() 和 returnConnection() 方法，確保獲取的物件是可重複使用的。</p>
+<p>請檢視程式碼介面是否違反  Object Pool 模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./1_files/UML1.png" target="_blank">
+ <img src="./1_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改 Main類別：
+<pre style="width:500px; height:300px;"> 
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(2);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+
+        Connection conn2 = pool.borrowConnection();
+        conn2.connect();
+    }
+}
+</pre>
+
+並修改其他程式，使得執行輸出：<br>
+Connected successfully.<br>
+
+Connected successfully.<br>
+ <br>
+<br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">class Connection {
+    public void connect() {
+        System.out.println("Connecting...");
+    }
+}
+class ConnectionPool {
+    public Connection borrowConnection() {
+        return new Connection(); 
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+      ConnectionPool  pool = new ConnectionPool( ) ;
+      Connection  con = pool. borrowConnection() ;
+       con.connect();
+  }
+}
+
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">import java.util.LinkedList;
+
+class Connection {
+    public void connect() {
+        System.out.println("Connected successfully.");
+    }
+}
+
+class ConnectionPool {
+    private int maxSize, Count = 0;
+    private LinkedList&lt;Connection&gt; pool = new LinkedList&lt;&gt;();
+
+    public ConnectionPool(int size) {
+        this.maxSize = size;
+    }
+
+    public Connection borrowConnection() {
+        if (!pool.isEmpty()) {
+            return pool.removeFirst();
+        }
+        if (Count &lt; maxSize) {
+            Count++;
+            return new Connection();
+        }
+        return null;
+    }
+    public void returnConnection(Connection connection) {
+        if (connection != null &amp;&amp; pool.size() &lt; maxSize) {
+            pool.addLast(connection);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(2);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+        Connection conn2 = pool.borrowConnection();
+        conn2.connect();
+    }
+}
+!@#$報告
+新設計有何優點?這個設計的核心優點在於「資源重用」與「控制成本」。傳統每次需要連線時都直接 new Connection()，看起來簡單，但如果在高頻率情境下（例如伺服器大量請求），物件建立與銷毀會帶來明顯的效能負擔。而這個 ConnectionPool 則改為先建立少量連線並重複使用，用完再放回池中，下次直接拿現成的，避免不必要的建立成本。
+
+再來是「數量控管」。透過 maxSize 限制最多只能建立固定數量的連線，可以避免系統因為過多連線而耗盡資源。像你這裡設為 2，就算程式一直要連線，也不會無限制增加，這在實務上（例如資料庫連線）非常重要。
+
+另外一個優點是「集中管理」。所有連線都由 ConnectionPool 統一負責借出與回收，不會分散在各處亂 new，讓程式結構更清楚，也更容易維護。假設之後要加上連線初始化、關閉機制或記錄使用狀態，只需要改 pool，不用動其他地方。
+
+沒 pool：每次 new Connection() -&gt;用完丟掉（浪費）
+有 pool：第一次建好-&gt; 之後一直重用（省成本）
+
+總結來說，這種設計主要提升了效能、穩定性與可維護性，特別適合用在「建立成本高、但會重複使用」的物件，例如資料庫連線、執行緒等。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
