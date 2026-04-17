@@ -1,0 +1,706 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./2_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./2_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./2_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./2_files/jquery.scrollbar.min.css">
+
+	<script src="./2_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./2_files/bootstrap.min.js.下載"></script>
+    <script src="./2_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_object_pool_4">
+		<input type="hidden" id="problem" name="problem" value="想像一個情境在多人使用的情境之下，需要叫用logger物件進行log()的動作。
+
+請檢視程式碼介面是否違反  Object Pool 模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+ 
+  
+
+撰寫LoggerPoll類別實現Object Pool 模式，並修改 LoggingService類別：
+public class LoggingService {
+    private LoggerPool pool ;
+    public LoggingService(int size) {
+	    pool = new LoggerPool(10);
+	}
+    public void logMessage(String message) {
+        Logger logger = pool.getLogger();
+        try {
+            logger.log(message);
+        } finally {
+            pool.releaseLogger(logger);
+        }
+    }
+    ....
+}
+public class Main {
+  public static void main(String[] args) {
+       LoggingService ls = new LoggingService(100);
+       ls.logMessage(&quot;Hello&quot;);
+       ls.logMessage(&quot;I am Tom&quot;);
+   }
+}
+
+
+並修改其他程式，使得執行輸出：
+
+Logging Hello
+
+
+Logging I am Tom">
+		<input type="hidden" id="src_codes" name="src_codes" value="public class Logger
+{
+    
+    public void log(String msg) {
+        
+     System.out.println(&quot;Logging &quot; + msg );
+    }
+}
+public class LoggingService {
+    public void logMessage(String message) {
+        Logger logger = new Logger();
+        logger.log(message);
+        // 記錄完日志後銷毀日志記錄器
+    }
+}
+public class Main
+{
+    
+  public static void main(String[] args) {
+     LoggingService  lg = new LoggingService( ) ;
+     lg.logMessage(“Hello”) ;
+  }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="import java.util.LinkedList;
+
+class Logger {
+    public void log(String msg) {
+        System.out.println(&quot;Logging &quot; + msg);
+    }
+}
+
+class LoggerPool {
+    private LinkedList&lt;Logger&gt; pool = new LinkedList&lt;&gt;();
+    private int maxSize;
+
+    public LoggerPool(int maxSize) {
+        this.maxSize = maxSize;
+        for (int i = 0; i &lt; maxSize; i++) {
+            pool.add(new Logger());
+        }
+    }
+
+    public synchronized Logger getLogger() {
+        while (pool.isEmpty()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return pool.removeFirst();
+    }
+
+    public synchronized void releaseLogger(Logger logger) {
+        pool.addLast(logger);
+        notifyAll();
+    }
+}
+
+class LoggingService {
+    private LoggerPool pool;
+
+    public LoggingService(int size) {
+        pool = new LoggerPool(size);
+    }
+    public void logMessage(String message) {
+        Logger logger = pool.getLogger();
+        try {
+            logger.log(message);
+        } finally {
+            pool.releaseLogger(logger);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        LoggingService ls = new LoggingService(100);
+        ls.logMessage(&quot;Hello&quot;);
+        ls.logMessage(&quot;I am Tom&quot;);
+    }
+}
+!@#$報告
+新設計有何優點?
+這份程式主要是在做一個 Logger 的重複使用機制。一般如果每次要印 log 都 new 一個 Logger，其實在少量使用時沒什麼差，但如果是多執行緒或大量輸出時，會一直建立物件，多少會有負擔。所以這裡先建立固定數量的 Logger，之後需要用就從 pool 裡拿，用完再放回去。
+
+比較特別的是這個版本有考慮到多執行緒的情況。像 getLogger() 有加 synchronized，代表同一時間只能有一個執行緒進來拿 Logger。如果 pool 已經被拿光了，程式也不會直接回傳 null，而是用 wait() 讓執行緒先停住，等有人把 Logger 還回來（releaseLogger() 裡的 notifyAll()），才繼續執行。這樣就不會發生搶資源或拿到空值的問題。
+
+舉個簡單情況，如果 pool 裡只有 2 個 Logger，但同時有 3 個執行緒要寫 log，前兩個可以正常拿到，第三個就會先等著，不會出錯。等其中一個用完放回去，第三個才繼續跑。這種行為在實際系統裡其實滿常見的。
+
+另外在 logMessage() 裡面用 try-finally，也是一個保險。就算中間發生例外，最後還是會把 Logger 放回 pool，不然久了 pool 會被用光。
+
+整體來看，這個設計主要是在控制資源數量，順便處理多執行緒同時使用的問題。寫法沒有特別複雜，但把幾個常見問題（像資源耗盡、競爭）都一起處理掉。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本題目要求學生將 Logger 實作為物件池（Object Pool），並且 LoggingService 要正確管理該 pool，同時要附上有意義的報告討論新設計優點。\n\n1. 程式部份錯誤分析：\n   (1) Logger 物件本身設計沒問題，沒有違反物件導向原則。\n   (2) LoggerPool 有正確初始化固定數量 Logger，並以 synchronized 保護方法，確保多執行緒下安全資源取得與還回動作。\n   (3) getLogger() 用 while + wait()，releaseLogger() 用 notifyAll()，標準物件池實作，沒問題。\n   (4) LoggingService 正確透過 pool 取得及釋放 Logger，也有考慮例外安全。\n   (5) Main 中測試碼可正確呼叫且依規格印出期望文字。\n\n2. 報告部份錯誤分析：\n   (a) 報告內容合理，且並非由 AI 直接生成（有生活化舉例及個人化描述、條列細節，不像是大語言模型模板，未發現明顯抄襲或罐頭文）。\n   (b) 優點描述準確：解釋了「物件重複利用」、「節省建立銷毀成本」、「多執行緒安全」與「防止資源耗盡」，涵蓋面完整。\n\n3. 物件導向錯誤個數：0\n\n4. 主要小瑕疵或可改進點：\n   (1) pool 使用 LinkedList 實作，雖然這題沒問題，但可抽象成 Queue 以便未來切換其他資料結構。\n   (2) 若 Logger 後續需有狀態或初始化動作，可再外部注入 logger 建立邏輯，但本題題意無強制要求。\n\n總結：程式與報告都完全正確，功能與設計都符合題目要求。無明顯物件導向、設計、細節實作錯誤。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;（1）可將 LoggerPool 實現 pool 型態由 LinkedList 改為介面（如 Queue），提升彈性。\n（2）針對 LoggerPool 若資源枯竭超時可提供自訂 timeout 機制（雖非此題目範疇）。\n（3）Logger 若為真實 logger，可抽象為 interface 以便未來切換不同 logger 實作。\n（4）報告題部分可適度再舉 1-2 個真實系統的資源池例子，如 Thread Pool、Database Connection Pool 增強完整性。\n（5）可於單元測試補充多執行緒下測試驗證 pool 安全性。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.83</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>學生能夠主動提出針對細節的疑問（如：getLogger用意何在），顯現一定程度的認知參與。</li><li>呈現程式修正結果，並能簡單說明程式碼設計背後的理由。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>缺乏深入的批判性探究與主動比較，沒有明顯驗證或質疑 AI 輸出本身的正確性。</li><li>較少策略性調整、反思與自我監控過程；合作互動層次只到逐步推進、無共構新見解。</li><li>無主動設計或執行獨立測試、未對 AI 結果做信賴校準。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>可以嘗試批判性比較不同實作方案（如自己思考不用物件池的情境，再請 AI 幫你分析差異）。</li><li>針對 AI 回覆主動提出驗證或挑戰，如手動測試各種極端情境（例如池子設零或設極大時的表現）。</li><li>多反思學習過程中的困難與收穫、或者結合自身理解重新整理設計原則，與 AI 產生更深入的對話。</li></ul>
+
+					<p>總評</p>
+					<pre>學生的互動多呈現於功能實作、疑問釐清及基本報告自述，偶有反思設計複雜度與效益，但深度問題意識、批判驗證，以及跨方案比較明顯不足。整體屬於逐步完善與表層說明，並未展現高層次共同建構或強烈主體性的認知互動。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>寫答案</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>getLogger用意何在</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>有一定要寫那麼複雜嗎</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>public class Logger
+{
+    
+    public void log(String msg) {
+        
+     System.out.println("Logging " + msg );
+    }
+}
+import java.util.LinkedList;
+
+class Logger {
+    public void log(String msg) {
+        System.out.println("Logging " + msg);
+    }
+}
+
+class LoggerPool {
+    private LinkedList<logger> pool = new LinkedList&lt;&gt;();
+    private int maxSize;
+
+    public LoggerPool(int maxSize) {
+        this.maxSize = maxSize;
+        for (int i = 0; i &lt; maxSize; i++) {
+            pool.add(new Logger());
+        }
+    }
+
+    public synchronized Logger getLogger() {
+        while (pool.isEmpty()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return pool.removeFirst();
+    }
+
+    public synchronized void releaseLogger(Logger logger) {
+        pool.addLast(logger);
+        notifyAll();
+    }
+}
+
+class LoggingService {
+    private LoggerPool pool;
+
+    public LoggingService(int size) {
+        pool = new LoggerPool(size);
+    }
+    public void logMessage(String message) {
+        Logger logger = pool.getLogger();
+        try {
+            logger.log(message);
+        } finally {
+            pool.releaseLogger(logger);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        LoggingService ls = new LoggingService(100);
+        ls.logMessage("Hello");
+        ls.logMessage("I am Tom");
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個設計是將「物件池（Object Pool）」與「多執行緒同步控制」結合，用來管理 Logger 這類可重複使用的資源。整體目的不是單純節省建立成本，而是讓多個執行緒在競爭資源時仍能安全、有序地運作。
+
+在這個實作中，LoggerPool 一開始就建立固定數量的 Logger（例如 100 個），並放入 pool 中。當有需求時，透過 getLogger() 取得一個可用的 Logger；使用完畢後，透過 releaseLogger() 歸還。這樣的好處是避免在高頻率呼叫 log 時不斷建立新物件，同時也確保 Logger 的使用數量受到控制。
+
+與前一個簡單版本相比，這裡的關鍵差異在於「同步機制」。getLogger() 與 releaseLogger() 都使用 synchronized，確保同一時間只有一個執行緒可以修改 pool。當 pool 為空時，getLogger() 不會直接回傳 null，而是呼叫 wait() 讓執行緒進入等待狀態，直到有其他執行緒釋放 Logger 並呼叫 notifyAll() 才會繼續執行。這種設計避免了忙等（busy waiting），也確保資源能被正確分配。
+
+舉一個簡單情境：假設 pool 大小為 2，但同時有 3 個執行緒呼叫 logMessage()。前兩個可以正常取得 Logger，第三個會進入等待狀態，而不是失敗或產生錯誤。當其中一個執行緒完成並釋放 Logger，第三個才會被喚醒並繼續執行。這讓系統在高併發下仍能穩定運作。
+
+另外，LoggingService 將 pool 封裝起來，外部只需要呼叫 logMessage()，不需要關心 Logger 的取得與釋放細節，降低使用複雜度。try-finally 的使用則確保即使中途發生例外，Logger 仍一定會被歸還，避免資源外洩。
+
+整體來看，這個設計的優點在於同時達成三件事：限制資源數量、防止多執行緒衝突，以及提升系統穩定性。特別適用於「資源有限且需要被多執行緒共享」的場景，例如日誌系統、資料庫連線或執行緒池。!@#$
+</logger></pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>import java.util.LinkedList;
+
+class Logger {
+    public void log(String msg) {
+        System.out.println("Logging " + msg);
+    }
+}
+
+class LoggerPool {
+    private LinkedList<logger> pool = new LinkedList&lt;&gt;();
+    private int maxSize;
+
+    public LoggerPool(int maxSize) {
+        this.maxSize = maxSize;
+        for (int i = 0; i &lt; maxSize; i++) {
+            pool.add(new Logger());
+        }
+    }
+
+    public synchronized Logger getLogger() {
+        while (pool.isEmpty()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return pool.removeFirst();
+    }
+
+    public synchronized void releaseLogger(Logger logger) {
+        pool.addLast(logger);
+        notifyAll();
+    }
+}
+
+class LoggingService {
+    private LoggerPool pool;
+
+    public LoggingService(int size) {
+        pool = new LoggerPool(size);
+    }
+    public void logMessage(String message) {
+        Logger logger = pool.getLogger();
+        try {
+            logger.log(message);
+        } finally {
+            pool.releaseLogger(logger);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        LoggingService ls = new LoggingService(100);
+        ls.logMessage("Hello");
+        ls.logMessage("I am Tom");
+    }
+}
+!@#$報告
+新設計有何優點?
+這份程式主要是在做一個 Logger 的重複使用機制。一般如果每次要印 log 都 new 一個 Logger，其實在少量使用時沒什麼差，但如果是多執行緒或大量輸出時，會一直建立物件，多少會有負擔。所以這裡先建立固定數量的 Logger，之後需要用就從 pool 裡拿，用完再放回去。
+
+比較特別的是這個版本有考慮到多執行緒的情況。像 getLogger() 有加 synchronized，代表同一時間只能有一個執行緒進來拿 Logger。如果 pool 已經被拿光了，程式也不會直接回傳 null，而是用 wait() 讓執行緒先停住，等有人把 Logger 還回來（releaseLogger() 裡的 notifyAll()），才繼續執行。這樣就不會發生搶資源或拿到空值的問題。
+
+舉個簡單情況，如果 pool 裡只有 2 個 Logger，但同時有 3 個執行緒要寫 log，前兩個可以正常拿到，第三個就會先等著，不會出錯。等其中一個用完放回去，第三個才繼續跑。這種行為在實際系統裡其實滿常見的。
+
+另外在 logMessage() 裡面用 try-finally，也是一個保險。就算中間發生例外，最後還是會把 Logger 放回 pool，不然久了 pool 會被用光。
+
+整體來看，這個設計主要是在控制資源數量，順便處理多執行緒同時使用的問題。寫法沒有特別複雜，但把幾個常見問題（像資源耗盡、競爭）都一起處理掉。!@#$
+</logger></pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>想像一個情境在多人使用的情境之下，需要叫用logger物件進行log()的動作。<br>
+請檢視程式碼介面是否違反  Object Pool 模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./2_files/UML1.png" target="_blank">
+ <img src="./2_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+撰寫LoggerPoll類別實現Object Pool 模式，並修改 LoggingService類別：
+<pre style="width:500px; height:300px;">public class LoggingService {
+    private LoggerPool pool ;
+    public LoggingService(int size) {
+	    pool = new LoggerPool(10);
+	}
+    public void logMessage(String message) {
+        Logger logger = pool.getLogger();
+        try {
+            logger.log(message);
+        } finally {
+            pool.releaseLogger(logger);
+        }
+    }
+    ....
+}
+public class Main {
+  public static void main(String[] args) {
+       LoggingService ls = new LoggingService(100);
+       ls.logMessage("Hello");
+       ls.logMessage("I am Tom");
+   }
+}
+</pre>
+
+並修改其他程式，使得執行輸出：<br>
+Logging Hello<br>
+
+Logging I am Tom<br>
+
+
+
+
+
+ <br>
+
+<br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">public class Logger
+{
+    
+    public void log(String msg) {
+        
+     System.out.println("Logging " + msg );
+    }
+}
+public class LoggingService {
+    public void logMessage(String message) {
+        Logger logger = new Logger();
+        logger.log(message);
+        // 記錄完日志後銷毀日志記錄器
+    }
+}
+public class Main
+{
+    
+  public static void main(String[] args) {
+     LoggingService  lg = new LoggingService( ) ;
+     lg.logMessage(“Hello”) ;
+  }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">import java.util.LinkedList;
+
+class Logger {
+    public void log(String msg) {
+        System.out.println("Logging " + msg);
+    }
+}
+
+class LoggerPool {
+    private LinkedList&lt;Logger&gt; pool = new LinkedList&lt;&gt;();
+    private int maxSize;
+
+    public LoggerPool(int maxSize) {
+        this.maxSize = maxSize;
+        for (int i = 0; i &lt; maxSize; i++) {
+            pool.add(new Logger());
+        }
+    }
+
+    public synchronized Logger getLogger() {
+        while (pool.isEmpty()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return pool.removeFirst();
+    }
+
+    public synchronized void releaseLogger(Logger logger) {
+        pool.addLast(logger);
+        notifyAll();
+    }
+}
+
+class LoggingService {
+    private LoggerPool pool;
+
+    public LoggingService(int size) {
+        pool = new LoggerPool(size);
+    }
+    public void logMessage(String message) {
+        Logger logger = pool.getLogger();
+        try {
+            logger.log(message);
+        } finally {
+            pool.releaseLogger(logger);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        LoggingService ls = new LoggingService(100);
+        ls.logMessage("Hello");
+        ls.logMessage("I am Tom");
+    }
+}
+!@#$報告
+新設計有何優點?
+這份程式主要是在做一個 Logger 的重複使用機制。一般如果每次要印 log 都 new 一個 Logger，其實在少量使用時沒什麼差，但如果是多執行緒或大量輸出時，會一直建立物件，多少會有負擔。所以這裡先建立固定數量的 Logger，之後需要用就從 pool 裡拿，用完再放回去。
+
+比較特別的是這個版本有考慮到多執行緒的情況。像 getLogger() 有加 synchronized，代表同一時間只能有一個執行緒進來拿 Logger。如果 pool 已經被拿光了，程式也不會直接回傳 null，而是用 wait() 讓執行緒先停住，等有人把 Logger 還回來（releaseLogger() 裡的 notifyAll()），才繼續執行。這樣就不會發生搶資源或拿到空值的問題。
+
+舉個簡單情況，如果 pool 裡只有 2 個 Logger，但同時有 3 個執行緒要寫 log，前兩個可以正常拿到，第三個就會先等著，不會出錯。等其中一個用完放回去，第三個才繼續跑。這種行為在實際系統裡其實滿常見的。
+
+另外在 logMessage() 裡面用 try-finally，也是一個保險。就算中間發生例外，最後還是會把 Logger 放回 pool，不然久了 pool 會被用光。
+
+整體來看，這個設計主要是在控制資源數量，順便處理多執行緒同時使用的問題。寫法沒有特別複雜，但把幾個常見問題（像資源耗盡、競爭）都一起處理掉。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
