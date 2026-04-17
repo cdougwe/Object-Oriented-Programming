@@ -1,0 +1,605 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./3_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./3_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./3_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./3_files/jquery.scrollbar.min.css">
+
+	<script src="./3_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./3_files/bootstrap.min.js.下載"></script>
+    <script src="./3_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_object_pool_2">
+		<input type="hidden" id="problem" name="problem" value="修改 ConnectionPool 類別，防止同一個物件被多次歸還，導致池內有重複物件。
+請檢視程式碼介面是否違反  Object Pool 模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改 Main類別：
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(1);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+
+        pool.returnConnection(conn1);
+
+    }
+}
+
+
+並修改其他程式，使得執行輸出：
+
+Connected successfully.
+
+
+Warning: This connection was not borrowed from the pool.">
+		<input type="hidden" id="src_codes" name="src_codes" value="class Connection {
+    public void connect() {
+        System.out.println(&quot;Connecting...&quot;);
+    }
+}
+class ConnectionPool {
+    public Connection borrowConnection() {
+        return new Connection(); 
+    }
+
+    public void returnConnection(Connection conn) {
+        pool.add(conn); 
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+      ConnectionPool  pool = new ConnectionPool( ) ;
+      Connection  con = pool. borrowConnection() ;
+      con.connect();
+      pool.returnConnection(con) ;
+  }
+}
+
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="import java.util.*;
+
+class Connection {
+    public void connect() {
+        System.out.println(&quot;Connected successfully.&quot;);
+    }
+}
+
+class ConnectionPool {
+    private LinkedList&lt;Connection&gt; pool = new LinkedList&lt;&gt;();
+    private Set&lt;Connection&gt; using = new HashSet&lt;&gt;();
+
+    public ConnectionPool(int maxSize) {
+        for (int i = 0; i &lt; maxSize; i++) {
+            pool.add(new Connection());
+        }
+    }
+
+    public Connection borrowConnection() {
+        if (!pool.isEmpty()) {
+            Connection connection = pool.removeFirst();
+            using.add(connection);
+            return connection;
+        }
+
+        return null;
+    }
+
+    public void returnConnection(Connection conn) {
+        if (!using.contains(conn)) {
+            System.out.println(&quot;Warning: This connection was not borrowed from the pool.&quot;);
+        } else {
+            pool.add(conn);
+            using.remove(conn);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(1);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+        pool.returnConnection(conn1);
+
+    }
+}
+!@#$報告
+新設計有何優點?
+
+我一開始先建立固定數量的 Connection 放進 pool，這部分和一般物件池一樣。但這裡多了一個 using（HashSet），專門記錄「目前被借出去的連線」。只要有 borrowConnection()，就會同時把該物件放進 using。
+
+在歸還時，程式不會直接把 connection 放回 pool，而是先檢查它有沒有在 using 裡。如果有，代表這是正常借出去的資源，就放回 pool 並從 using 移除；如果沒有，就印出 warning，表示這個物件來源不對或已經還過。
+
+用 main 的流程看會比較清楚：
+pool 大小是 1
+先 borrow → conn1 進 using
+第一次 return → 正常，conn1 回 pool
+第二次 return → conn1 不在 using → 顯示 warning
+
+這樣可以抓到兩種常見錯誤：一種是重複歸還，同一個物件被放回 pool 兩次；另一種是把不是從 pool 拿的物件丟進來。這兩種情況如果不檢查，pool 內容會被污染，後面拿到的資源可能就不可靠。
+
+整體來看，這個設計是在原本物件池的基礎上，加了一層簡單的「合法性檢查」。寫法不複雜，但可以避免一些很難追的 bug，尤其是在程式變大之後，這種檢查會變得很有價值。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;學生程式完全正確。
+
+【錯誤個數】：0
+
+【程式正確性評估】
+1. ConnectionPool 實作正確：
+    - pool 用 LinkedList 管理可用資源。
+    - using 變數用來追蹤目前借出的連線，防止重複歸還與來源不明資源歸還。
+    - borrowConnection時會將取出的物件放入using，符合物件池模式的正確用法。
+    - returnConnection中先驗證using，只有曾經被借出的才會被回收，否則警告。
+2. Main 執行流程與要求一致，輸出符合預期。
+3. 沒有違反物件池(Object Pool)原則，也沒有出現重複或外來物件被加入池。
+
+【報告內容評估】
+1. 報告明確敘述設計重點及使用using驗證資源歸還來源。分析兩種常見資源池管理問題及新設計如何避免。
+2. 說明了設計簡單、易於維護且有助於偵錯。不像AI生成而是較口語化的技術說明。
+3. 條理分明、用語恰當，合理解釋設計優點。
+
+【總評】：
+- 程式部分： 70/70
+- 報告部分： 30/30
+合計：100/100 分。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本次程式與報告皆無明顯錯誤，各項設計、說明均符合物件池設計原則。
+未來可以再補強：
+- 實作多執行緒安全（如加鎖/同步化），防止多執行緒返還衝突（進階）。
+- 可以實作「borrowConnection無可用連線」時，決定回傳null或等待機制。
+- 若要防呆更完整，可考慮 returnConnection(null) 時可給予警告。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.83</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>能明確提出需求與操作細節，對物件池實作流程有所掌握。</li><li>有自我整理過程與新設計優點，展現一定程度的思考。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>缺乏對AI建議的深入追問、比較不同實作、或驗證AI回饋的主動行為。</li><li>極少進行反思、驗證、質疑或策略調整，僅停留在陳述與表面修正。</li><li>互動多為單向自述，甚少積極利用AI作為認知或決策協作者。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>下次可針對AI的建議主動提出疑問（如：這樣設計有什麼潛在缺陷？）或請AI評比多種方法。</li><li>多嘗試從不同維度（如效能、安全、易維護性）比較你的方案和AI建議，並反思改進空間。</li><li>在測試設計時可明確驗證輸出、或詢問AI常見的bug與防呆策略，增加互動深度。</li></ul>
+
+					<p>總評</p>
+					<pre>本次互動以任務描述與自身整理為主，屬於“表層修正”型，部分有自我解釋與簡易監控（TO、CE、RQ略有展現），但缺少主動追問、驗證或與AI的多元交流，整體互動品質為基礎~中等，尚有明顯提升空間。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>Warning: This connection was not borrowed from the pool.所以我該new嗎還是throwexpention?</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>我一直好奇之前都用linkedlist現在卻用queue到底我該用誰還是我高興就好畢竟操作方式都一樣</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>import java.util.*;
+
+class Connection {
+    public void connect() {
+        System.out.println("Connected successfully.");
+    }
+}
+
+class ConnectionPool {
+    private LinkedList<connection> pool = new LinkedList&lt;&gt;();
+    private Set<connection> using = new HashSet&lt;&gt;();
+
+    public ConnectionPool(int maxSize) {
+        for (int i = 0; i &lt; maxSize; i++) {
+            pool.add(new Connection());
+        }
+    }
+
+    public Connection borrowConnection() {
+        if (!pool.isEmpty()) {
+            Connection connection = pool.removeFirst();
+            using.add(connection);
+            return connection;
+        }
+
+        return null;
+    }
+
+    public void returnConnection(Connection conn) {
+        if (!using.contains(conn)) {
+            System.out.println("Warning: This connection was not borrowed from the pool.");
+        } else {
+            pool.add(conn);
+            using.remove(conn);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(1);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+        pool.returnConnection(conn1);
+
+    }
+}
+!@#$報告
+新設計有何優點?
+
+我一開始先建立固定數量的 Connection 放進 pool，這部分和一般物件池一樣。但這裡多了一個 using（HashSet），專門記錄「目前被借出去的連線」。只要有 borrowConnection()，就會同時把該物件放進 using。
+
+在歸還時，程式不會直接把 connection 放回 pool，而是先檢查它有沒有在 using 裡。如果有，代表這是正常借出去的資源，就放回 pool 並從 using 移除；如果沒有，就印出 warning，表示這個物件來源不對或已經還過。
+
+用 main 的流程看會比較清楚：
+pool 大小是 1
+先 borrow → conn1 進 using
+第一次 return → 正常，conn1 回 pool
+第二次 return → conn1 不在 using → 顯示 warning
+
+這樣可以抓到兩種常見錯誤：一種是重複歸還，同一個物件被放回 pool 兩次；另一種是把不是從 pool 拿的物件丟進來。這兩種情況如果不檢查，pool 內容會被污染，後面拿到的資源可能就不可靠。
+
+整體來看，這個設計是在原本物件池的基礎上，加了一層簡單的「合法性檢查」。寫法不複雜，但可以避免一些很難追的 bug，尤其是在程式變大之後，這種檢查會變得很有價值。!@#$
+</connection></connection></pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>修改 ConnectionPool 類別，防止同一個物件被多次歸還，導致池內有重複物件。</p>
+<p>請檢視程式碼介面是否違反  Object Pool 模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./3_files/UML1.png" target="_blank">
+ <img src="./3_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改 Main類別：
+<pre style="width:500px; height:300px;">public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(1);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+
+        pool.returnConnection(conn1);
+
+    }
+}
+</pre>
+
+並修改其他程式，使得執行輸出：<br>
+Connected successfully.<br>
+
+Warning: This connection was not borrowed from the pool.<br>
+
+
+
+ <br>
+
+<br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">class Connection {
+    public void connect() {
+        System.out.println("Connecting...");
+    }
+}
+class ConnectionPool {
+    public Connection borrowConnection() {
+        return new Connection(); 
+    }
+
+    public void returnConnection(Connection conn) {
+        pool.add(conn); 
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+      ConnectionPool  pool = new ConnectionPool( ) ;
+      Connection  con = pool. borrowConnection() ;
+      con.connect();
+      pool.returnConnection(con) ;
+  }
+}
+
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">import java.util.*;
+
+class Connection {
+    public void connect() {
+        System.out.println("Connected successfully.");
+    }
+}
+
+class ConnectionPool {
+    private LinkedList&lt;Connection&gt; pool = new LinkedList&lt;&gt;();
+    private Set&lt;Connection&gt; using = new HashSet&lt;&gt;();
+
+    public ConnectionPool(int maxSize) {
+        for (int i = 0; i &lt; maxSize; i++) {
+            pool.add(new Connection());
+        }
+    }
+
+    public Connection borrowConnection() {
+        if (!pool.isEmpty()) {
+            Connection connection = pool.removeFirst();
+            using.add(connection);
+            return connection;
+        }
+
+        return null;
+    }
+
+    public void returnConnection(Connection conn) {
+        if (!using.contains(conn)) {
+            System.out.println("Warning: This connection was not borrowed from the pool.");
+        } else {
+            pool.add(conn);
+            using.remove(conn);
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(1);
+
+        Connection conn1 = pool.borrowConnection();
+        conn1.connect();
+
+        pool.returnConnection(conn1);
+        pool.returnConnection(conn1);
+
+    }
+}
+!@#$報告
+新設計有何優點?
+
+我一開始先建立固定數量的 Connection 放進 pool，這部分和一般物件池一樣。但這裡多了一個 using（HashSet），專門記錄「目前被借出去的連線」。只要有 borrowConnection()，就會同時把該物件放進 using。
+
+在歸還時，程式不會直接把 connection 放回 pool，而是先檢查它有沒有在 using 裡。如果有，代表這是正常借出去的資源，就放回 pool 並從 using 移除；如果沒有，就印出 warning，表示這個物件來源不對或已經還過。
+
+用 main 的流程看會比較清楚：
+pool 大小是 1
+先 borrow → conn1 進 using
+第一次 return → 正常，conn1 回 pool
+第二次 return → conn1 不在 using → 顯示 warning
+
+這樣可以抓到兩種常見錯誤：一種是重複歸還，同一個物件被放回 pool 兩次；另一種是把不是從 pool 拿的物件丟進來。這兩種情況如果不檢查，pool 內容會被污染，後面拿到的資源可能就不可靠。
+
+整體來看，這個設計是在原本物件池的基礎上，加了一層簡單的「合法性檢查」。寫法不複雜，但可以避免一些很難追的 bug，尤其是在程式變大之後，這種檢查會變得很有價值。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>
