@@ -1,0 +1,559 @@
+
+<!-- saved from url=(0042)http://120.125.80.92:8088/task_answer_test -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link href="./4_files/jquerysctipttop.css" rel="stylesheet" type="text/css">
+	<link rel="stylesheet" href="./4_files/bootstrap.min.css">
+	<link rel="stylesheet" href="./4_files/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+    <link rel="stylesheet" href="./4_files/jquery.scrollbar.min.css">
+
+	<script src="./4_files/jquery-1.12.4.min.js.下載" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+	<script src="./4_files/bootstrap.min.js.下載"></script>
+    <script src="./4_files/jquery.scrollbar.min.js.下載"></script>
+<style>
+.right { 
+ color: green;   
+}
+.wrong {
+ color: red;   
+}
+#code {
+   overflow: auto;
+   }
+   * {
+  box-sizing: border-box;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 50%;
+  padding: 10px;
+  height: 100%; /* Should be removed. Only for demonstration */
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+li {
+  float: left;
+}
+
+</style>
+<script>
+ function autoCorrecting() {
+   document.getElementById("body").style.cursor = "progress";
+   var form = $("#chatGPT_frm");
+   var url = form.attr('action');
+   $('#chatGPT_area').css("display", "none");
+   $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+           success: function(data)
+           {
+				dataString =  JSON.stringify(data, null, 2) ;
+				//alert("dataString:" + dataString);
+                
+				$('#backward').css("display", "block");
+				$('#chatGPT_area').css("display", "block");
+				
+			    $('#revision_state').text( "批改完畢" );
+				
+				$('#SCORE').html( data.分數.toString() ) ;
+				$('#RESULT').text("<pre>" + data.結果 + "</pre>");
+				$('#SUGGEST').text( "<pre>" + data.建議 + "</pre>") ;
+
+                //******************************************
+				const utterance_level = data?.互動評分?.utterance_level_results || [];
+				let chat_log = "";
+
+				if (utterance_level.length === 0) {
+					chat_log = "<p>No Chat LOg Data!</p>";
+				} else {
+					chat_log = utterance_level.map(item => `
+						<div class="utterance-item">
+							<pre>${item.utterance ?? ""}</pre>
+							
+						</div>
+						<hr>
+					`).join("");
+				}
+
+				// render
+				$('#CHAT_LOG').html(chat_log);
+				
+				
+				const summary = data?.互動評分?.session_level_summary;
+
+				if (!summary) {
+					$('#CHAT_RESULT').html("<p>No evaluation data available.</p>");
+					document.getElementById("body").style.cursor = "default";
+					return;
+				}
+				
+				// Overall score
+				$('#CHAT_SCORE').text(summary.overall_session_score ?? "");
+
+				// Interaction type/profile
+				$('#CHAT_TYPE').text(summary.interaction_profile ?? "");
+				
+				// Strengths + weaknesses + rationale
+				let resultHtml = `
+					<p>優點</p>
+					${arrayToList(summary.strengths)}
+
+					<p>缺點</p>
+					${arrayToList(summary.weaknesses)}
+
+				`;
+
+				$('#CHAT_RESULT').html(resultHtml);
+
+				// Suggestions + summary rationale
+				let suggestHtml = `
+					${arrayToList(summary.suggestions)}
+
+					<p>總評</p>
+					<pre>${escapeHtml(summary.summary_rationale ?? "")}</pre>
+				`;
+
+				$('#CHAT_SUGGEST').html(suggestHtml);
+				
+			   document.getElementById("body").style.cursor = "default";
+           }
+         });
+ }
+ 
+ function arrayToList(arr) {
+    if (!arr || !Array.isArray(arr) || arr.length === 0) {
+        return "<p>None</p>";
+    }
+    return "<ul><li>" + arr.map(item => escapeHtml(item)).join("</li><li>") + "</li></ul>";
+}
+
+function objectToPre(obj) {
+    if (!obj) return "<pre>{}</pre>";
+    return "<pre>" + escapeHtml(JSON.stringify(obj, null, 2)) + "</pre>";
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+ function call_parent_function() {
+     if (window.opener && !window.opener.closed) {
+        window.opener.downloadUnits(); // Calls the function in the parent
+      } else {
+        alert("Parent window is not accessible.");
+      }
+	  window.close();
+ }
+
+
+
+</script>
+</head><body id="body" onload="autoCorrecting()" style="cursor: default;">
+
+  <!-- <div class="column"> -->
+    <div style=" margin:20px; padding:10px;width:100%; display:inline-block;">
+     <div id="revision_state">批改完畢</div> 
+	 <div id="backward" style="display: block; margin: 20px;"> <button style="margin-right:2px;margin-top:8px; " type="button" class="btn btn-primary" id="home" onclick="window.close();">回首頁</button>
+	 </div>
+	  <form id="chatGPT_frm" action="http://120.125.80.92:8088/chatGPT_autoCorrecting" method="POST">
+	    <input type="hidden" id="exam_id" name="exam_id" value="20250208_adapter_4">
+		<input type="hidden" id="problem" name="problem" value="請檢視程式碼介面是否違反 Adapter模式，並撰寫報告，討論新設計有何優點?
+
+
+下面是程式碼的UML圖
+
+ 
+  
+
+修改使得：
+    ModernInventoryApp p = new ModernInventoryApp(new LegacyInventorySystemAdapter( ) );
+    p.updateStock(&quot;筆電&quot; , 5 ); //顯示 &quot;Updating legacy stock: 筆電 - 5&quot;。">
+		<input type="hidden" id="src_codes" name="src_codes" value="class LegacyInventorySystem {
+    public void updateLegacyStock(String item, int quantity) {
+        System.out.println(&quot;Updating legacy stock: &quot; + item + &quot; - &quot; + quantity);
+    }
+}
+class Main {
+     public static void main(String[] args) {        
+       ModernInventoryApp p = new ModernInventoryApp (new LegacyInventorySystem ());
+       p.processData(&quot;筆電&quot;, 5)  ;
+     }
+}
+class ModernInventoryApp {
+    private LegacyInventorySystem legacyInventorySystem;
+    public ModernInventoryApp() {
+        this.legacyInventorySystem = new LegacyInventorySystem();
+    }
+    public void updateStock(String item, int quantity) {
+        legacyInventorySystem.updateLegacyStock(item, quantity);
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+">
+		<input type="hidden" id="codes" name="codes" value="class LegacyInventorySystem {
+    public void updateLegacyStock(String item, int quantity) {
+        System.out.println(&quot;Updating legacy stock: &quot; + item + &quot; - &quot; + quantity);
+    }
+}
+
+interface InventoryTarget {
+    void updateStock(String item, int quantity);
+}
+
+class LegacyInventorySystemAdapter implements InventoryTarget {
+    private LegacyInventorySystem legacyInventorySystem = new LegacyInventorySystem();
+
+    @Override
+    public void updateStock(String item, int quantity) {
+        legacyInventorySystem.updateLegacyStock(item, quantity);
+    }
+}
+
+class ModernInventoryApp implements InventoryTarget {
+    private InventoryTarget inventoryTarget;
+
+    public ModernInventoryApp(InventoryTarget inventoryTarget) {
+        this.inventoryTarget = inventoryTarget;
+    }
+
+    public void updateStock(String item, int quantity) {
+        inventoryTarget.updateStock(item, quantity);
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        ModernInventoryApp p = new ModernInventoryApp(new LegacyInventorySystemAdapter());
+        p.updateStock(&quot;筆電&quot;, 5); // 顯示 &quot;Updating legacy stock: 筆電 - 5&quot;。
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個新設計的核心優點在於：讓舊系統可以在完全不修改的情況下，被新系統直接使用，同時維持整體架構的乾淨與可擴充性。
+
+在你的程式中，LegacyInventorySystem 原本有自己的方法 updateLegacyStock()，但新系統 ModernInventoryApp 並不直接依賴它，而是統一依賴 InventoryTarget 這個介面。這樣做的關鍵意義是，新系統只需要知道「我要呼叫 updateStock」，而不需要理解背後到底是新系統還是舊系統。
+
+LegacyInventorySystemAdapter 的角色就是把兩個不同世界接起來，它把舊方法 updateLegacyStock() 轉成符合新介面的 updateStock()。因此舊系統完全不用動，卻可以無縫接入新架構。
+
+這種設計帶來的最大價值是降低耦合。ModernInventoryApp 不再綁死任何特定實作，未來如果要換成雲端庫存系統或資料庫版本，只要再寫一個新的 Adapter 就可以替換，不需要改原本的應用程式邏輯。
+
+同時也讓系統更容易擴充與維護。當需求增加時，不是去修改舊程式，而是新增新的 Adapter 去符合介面，符合「擴充開放、修改封閉」的設計原則。
+
+總結來說，這個設計的價值在於把「舊系統的延續」和「新系統的抽象一致性」分離開來，使整體架構可以長期演進，而不會因為歷史系統而卡死。!@#$
+">
+		
+		<!-- <input type="button" onClick="autoCorrecting()" value="重新批改" /> -->
+	  </form>
+	  <div id="chatGPT_area" style="color: blue; padding: 10px; width: 100%; display: block; overflow-y: scroll;">
+	     
+		    程式碼分數: <span id="SCORE">100</span><br>
+	
+		    批閱結果: <div id="RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;本題要求檢查並修正原始程式碼的介面設計是否違反Adapter模式，並要求撰寫報告討論新設計優點。學生程式成功套用了Adapter設計模式，步驟如下：
+1. 抽象出InventoryTarget介面，使現代應用程式與舊系統解耦。
+2. 實作LegacyInventorySystemAdapter作為適配器，使ModernInventoryApp可以透過統一介面與LegacyInventorySystem連接。
+3. ModernInventoryApp依賴於介面而非具體實作，容易做未來擴充。
+4. main方法的測試輸出正確。
+
+錯誤數：0個，結構未見違反物件導向原則，也完全正確運用Adapter模式。
+
+報告方面，內容合邏輯、說明詳盡，重點如低耦合及擴充性皆正確，並無明顯AI生成痕跡或抄襲痕跡。
+
+建議分數：100分。
+評分理由：
+- 程式碼完整正確運用Adapter模式並重構原始設計缺陷。
+- report分析合宜，內容無明顯AI抄襲，論點合理具體。
+
+綜上，全數滿分。&lt;/pre&gt;</div>
+			 
+		    程式碼建議: <div id="SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">&lt;pre&gt;維持現有設計即可，如欲進一步精練，可將LegacyInventorySystem藉由建構注入而非內部直接初始化，增加測試彈性。如：
+class LegacyInventorySystemAdapter implements InventoryTarget {
+    private LegacyInventorySystem legacyInventorySystem;
+    public LegacyInventorySystemAdapter(LegacyInventorySystem legacyInventorySystem){
+        this.legacyInventorySystem = legacyInventorySystem;
+    }
+    @Override
+    public void updateStock(String item, int quantity) {
+        legacyInventorySystem.updateLegacyStock(item, quantity);
+    }
+}
+其餘部分相當良好，無須更動。&lt;/pre&gt;</div>
+		
+		    互動分數 (滿分4分): <span id="CHAT_SCORE">1.17</span><br>
+	
+			互動類型: <div id="CHAT_TYPE" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">表層修正 (surface-refinement)</div>
+	
+		    批閱結果: <div id="CHAT_RESULT" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<p>優點</p>
+					<ul><li>問題與程式敘述明確完整，基礎設計優點有初步說明。</li><li>可以陳述需求、簡單功能與設計目標。</li></ul>
+
+					<p>缺點</p>
+					<ul><li>缺乏對 AI 生成內容的質疑、驗證，未進行任何追問或深入對話。</li><li>沒有互動調整、策略反思，亦未主動討論替代方案或擴展應用。</li><li>未展現主體性學習歷程，對 AI 僅做單向資訊丟棄。</li></ul>
+
+				</div>
+			 
+		    互動建議: <div id="CHAT_SUGGEST" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+					<ul><li>可嘗試向 AI 追問此設計適用或不適用的情境，或請 AI 換用不同設計模式比較差異。</li><li>主動請求 AI 檢測程式潛在錯誤或提出優化建議。</li><li>反思自己的理解：例如問『這種架構若有多個舊系統怎麼辦？』或『有什麼隱藏風險？』。</li><li>利用 AI 進行程式測試、驗證功能是否如預期，而不只是抄寫程式與報告。</li></ul>
+
+					<p>總評</p>
+					<pre>整個對話僅呈現程式、報告及單向性設計優點說明，缺乏任何認知、論證、驗證、互動過程，屬於典型表層資訊交付與整理，不具高互動性。</pre>
+				</div>
+			
+			互動紀錄: <div id="CHAT_LOG" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+						<div class="utterance-item">
+							<pre>class LegacyInventorySystem {
+    public void updateLegacyStock(String item, int quantity) {
+        System.out.println("Updating legacy stock: " + item + " - " + quantity);
+    }
+}
+
+interface InventoryTarget {
+    void updateStock(String item, int quantity);
+}
+
+class LegacyInventorySystemAdapter implements InventoryTarget {
+    private LegacyInventorySystem legacyInventorySystem = new LegacyInventorySystem();
+
+    @Override
+    public void updateStock(String item, int quantity) {
+        legacyInventorySystem.updateLegacyStock(item, quantity);
+    }
+}
+
+class ModernInventoryApp implements InventoryTarget {
+    private InventoryTarget inventoryTarget;
+
+    public ModernInventoryApp(InventoryTarget inventoryTarget) {
+        this.inventoryTarget = inventoryTarget;
+    }
+
+    public void updateStock(String item, int quantity) {
+        inventoryTarget.updateStock(item, quantity);
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        ModernInventoryApp p = new ModernInventoryApp(new LegacyInventorySystemAdapter());
+        p.updateStock("筆電", 5); // 顯示 "Updating legacy stock: 筆電 - 5"。
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個新設計的核心優點在於：讓舊系統可以在完全不修改的情況下，被新系統直接使用，同時維持整體架構的乾淨與可擴充性。
+
+在你的程式中，LegacyInventorySystem 原本有自己的方法 updateLegacyStock()，但新系統 ModernInventoryApp 並不直接依賴它，而是統一依賴 InventoryTarget 這個介面。這樣做的關鍵意義是，新系統只需要知道「我要呼叫 updateStock」，而不需要理解背後到底是新系統還是舊系統。
+
+LegacyInventorySystemAdapter 的角色就是把兩個不同世界接起來，它把舊方法 updateLegacyStock() 轉成符合新介面的 updateStock()。因此舊系統完全不用動，卻可以無縫接入新架構。
+
+這種設計帶來的最大價值是降低耦合。ModernInventoryApp 不再綁死任何特定實作，未來如果要換成雲端庫存系統或資料庫版本，只要再寫一個新的 Adapter 就可以替換，不需要改原本的應用程式邏輯。
+
+同時也讓系統更容易擴充與維護。當需求增加時，不是去修改舊程式，而是新增新的 Adapter 去符合介面，符合「擴充開放、修改封閉」的設計原則。
+
+總結來說，這個設計的價值在於把「舊系統的延續」和「新系統的抽象一致性」分離開來，使整體架構可以長期演進，而不會因為歷史系統而卡死。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					
+						<div class="utterance-item">
+							<pre>class LegacyInventorySystem {
+    public void updateLegacyStock(String item, int quantity) {
+        System.out.println("Updating legacy stock: " + item + " - " + quantity);
+    }
+}
+
+interface InventoryTarget {
+    void updateStock(String item, int quantity);
+}
+
+class LegacyInventorySystemAdapter implements InventoryTarget {
+    private LegacyInventorySystem legacyInventorySystem = new LegacyInventorySystem();
+
+    @Override
+    public void updateStock(String item, int quantity) {
+        legacyInventorySystem.updateLegacyStock(item, quantity);
+    }
+}
+
+class ModernInventoryApp implements InventoryTarget {
+    private InventoryTarget inventoryTarget;
+
+    public ModernInventoryApp(InventoryTarget inventoryTarget) {
+        this.inventoryTarget = inventoryTarget;
+    }
+
+    public void updateStock(String item, int quantity) {
+        inventoryTarget.updateStock(item, quantity);
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        ModernInventoryApp p = new ModernInventoryApp(new LegacyInventorySystemAdapter());
+        p.updateStock("筆電", 5); // 顯示 "Updating legacy stock: 筆電 - 5"。
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個新設計的核心優點在於：讓舊系統可以在完全不修改的情況下，被新系統直接使用，同時維持整體架構的乾淨與可擴充性。
+
+在你的程式中，LegacyInventorySystem 原本有自己的方法 updateLegacyStock()，但新系統 ModernInventoryApp 並不直接依賴它，而是統一依賴 InventoryTarget 這個介面。這樣做的關鍵意義是，新系統只需要知道「我要呼叫 updateStock」，而不需要理解背後到底是新系統還是舊系統。
+
+LegacyInventorySystemAdapter 的角色就是把兩個不同世界接起來，它把舊方法 updateLegacyStock() 轉成符合新介面的 updateStock()。因此舊系統完全不用動，卻可以無縫接入新架構。
+
+這種設計帶來的最大價值是降低耦合。ModernInventoryApp 不再綁死任何特定實作，未來如果要換成雲端庫存系統或資料庫版本，只要再寫一個新的 Adapter 就可以替換，不需要改原本的應用程式邏輯。
+
+同時也讓系統更容易擴充與維護。當需求增加時，不是去修改舊程式，而是新增新的 Adapter 去符合介面，符合「擴充開放、修改封閉」的設計原則。
+
+總結來說，這個設計的價值在於把「舊系統的延續」和「新系統的抽象一致性」分離開來，使整體架構可以長期演進，而不會因為歷史系統而卡死。!@#$
+</pre>
+							
+						</div>
+						<hr>
+					</div>
+		
+		
+	  </div>
+    </div>
+    <div id="area1" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     問題描述: <br><div id="area1_code"> <div style="text-align:left">
+<p>請檢視程式碼介面是否違反 Adapter模式，並撰寫報告，討論新設計有何優點?<br>
+</p><div>
+下面是程式碼的UML圖<br>
+ <a href="./4_files/UML1.png" target="_blank">
+ <img title="放大" class="exercise_image" src="./4_files/UML1.png" style="width:300px; height:200px;"> </a>
+</div>
+修改使得：
+<pre style="width:500px; height:300px;">    ModernInventoryApp p = new ModernInventoryApp(new LegacyInventorySystemAdapter( ) );
+    p.updateStock("筆電" , 5 ); //顯示 "Updating legacy stock: 筆電 - 5"。
+</pre>
+ <br>
+ <br>
+
+<p></p>
+
+</div></div> <!-- not escapping HTML elements -->
+    </div>
+	 
+    <div id="area2" style="margin:20px; padding:10px; width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     原始程式: <br><textarea id="area2_code" cols="150" rows="30">class LegacyInventorySystem {
+    public void updateLegacyStock(String item, int quantity) {
+        System.out.println("Updating legacy stock: " + item + " - " + quantity);
+    }
+}
+class Main {
+     public static void main(String[] args) {        
+       ModernInventoryApp p = new ModernInventoryApp (new LegacyInventorySystem ());
+       p.processData("筆電", 5)  ;
+     }
+}
+class ModernInventoryApp {
+    private LegacyInventorySystem legacyInventorySystem;
+    public ModernInventoryApp() {
+        this.legacyInventorySystem = new LegacyInventorySystem();
+    }
+    public void updateStock(String item, int quantity) {
+        legacyInventorySystem.updateLegacyStock(item, quantity);
+    }
+}
+!@#$報告
+新設計有何優點?!@#$
+</textarea>
+    </div>
+
+
+    <div id="area3" style=" margin:20px; padding:10px;width:100%; display:inline-block;overflow-y: scroll; border: 2px solid black; ">
+     你的程式碼: <br><textarea id="area3_code" cols="150" rows="30">class LegacyInventorySystem {
+    public void updateLegacyStock(String item, int quantity) {
+        System.out.println("Updating legacy stock: " + item + " - " + quantity);
+    }
+}
+
+interface InventoryTarget {
+    void updateStock(String item, int quantity);
+}
+
+class LegacyInventorySystemAdapter implements InventoryTarget {
+    private LegacyInventorySystem legacyInventorySystem = new LegacyInventorySystem();
+
+    @Override
+    public void updateStock(String item, int quantity) {
+        legacyInventorySystem.updateLegacyStock(item, quantity);
+    }
+}
+
+class ModernInventoryApp implements InventoryTarget {
+    private InventoryTarget inventoryTarget;
+
+    public ModernInventoryApp(InventoryTarget inventoryTarget) {
+        this.inventoryTarget = inventoryTarget;
+    }
+
+    public void updateStock(String item, int quantity) {
+        inventoryTarget.updateStock(item, quantity);
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        ModernInventoryApp p = new ModernInventoryApp(new LegacyInventorySystemAdapter());
+        p.updateStock("筆電", 5); // 顯示 "Updating legacy stock: 筆電 - 5"。
+    }
+}
+!@#$報告
+新設計有何優點?
+
+這個新設計的核心優點在於：讓舊系統可以在完全不修改的情況下，被新系統直接使用，同時維持整體架構的乾淨與可擴充性。
+
+在你的程式中，LegacyInventorySystem 原本有自己的方法 updateLegacyStock()，但新系統 ModernInventoryApp 並不直接依賴它，而是統一依賴 InventoryTarget 這個介面。這樣做的關鍵意義是，新系統只需要知道「我要呼叫 updateStock」，而不需要理解背後到底是新系統還是舊系統。
+
+LegacyInventorySystemAdapter 的角色就是把兩個不同世界接起來，它把舊方法 updateLegacyStock() 轉成符合新介面的 updateStock()。因此舊系統完全不用動，卻可以無縫接入新架構。
+
+這種設計帶來的最大價值是降低耦合。ModernInventoryApp 不再綁死任何特定實作，未來如果要換成雲端庫存系統或資料庫版本，只要再寫一個新的 Adapter 就可以替換，不需要改原本的應用程式邏輯。
+
+同時也讓系統更容易擴充與維護。當需求增加時，不是去修改舊程式，而是新增新的 Adapter 去符合介面，符合「擴充開放、修改封閉」的設計原則。
+
+總結來說，這個設計的價值在於把「舊系統的延續」和「新系統的抽象一致性」分離開來，使整體架構可以長期演進，而不會因為歷史系統而卡死。!@#$
+</textarea>
+    </div>
+	
+	<script>
+		$(document).ready(function() {
+			function decodeHtmlEntities(str) {
+				return $('<textarea/>').html(str).text();
+			}
+
+			let problemHTML = $('#area1_code').html();
+			problemHTML = problemHTML.replace(/<br\s*\/?>/gi, '\n');
+			let problemText = $('<div>').html(problemHTML).text().trim();
+			$('#problem').val(problemText);
+
+			$('#src_codes').val(decodeHtmlEntities($('#area2_code').val()));
+			$('#codes').val(decodeHtmlEntities($('#area3_code').val()));
+		});
+		</script>
+
+
+</body></html>

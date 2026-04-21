@@ -1,27 +1,37 @@
-interface InventoryApp {
-    void updateStock(String item, int quantity);
-}
-
 class LegacyInventorySystem {
     public void updateLegacyStock(String item, int quantity) {
         System.out.println("Updating legacy stock: " + item + " - " + quantity);
     }
 }
 
-class ModernInventoryAppAdapter implements InventoryApp {
-    private LegacyInventorySystem legacyInventorySystem;
+interface InventoryTarget {
+    void updateStock(String item, int quantity);
+}
 
-    public ModernInventoryAppAdapter() {
-        this.legacyInventorySystem = new LegacyInventorySystem();
-    }
+class LegacyInventorySystemAdapter implements InventoryTarget {
+    private LegacyInventorySystem legacyInventorySystem = new LegacyInventorySystem();
+
+    @Override
     public void updateStock(String item, int quantity) {
         legacyInventorySystem.updateLegacyStock(item, quantity);
     }
 }
 
+class ModernInventoryApp implements InventoryTarget {
+    private InventoryTarget inventoryTarget;
+
+    public ModernInventoryApp(InventoryTarget inventoryTarget) {
+        this.inventoryTarget = inventoryTarget;
+    }
+
+    public void updateStock(String item, int quantity) {
+        inventoryTarget.updateStock(item, quantity);
+    }
+}
+
 class Main {
     public static void main(String[] args) {
-        InventoryApp p = new ModernInventoryAppAdapter();
+        ModernInventoryApp p = new ModernInventoryApp(new LegacyInventorySystemAdapter());
         p.updateStock("筆電", 5); // 顯示 "Updating legacy stock: 筆電 - 5"。
     }
 }
